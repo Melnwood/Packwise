@@ -237,10 +237,45 @@
   .stat .s{font-size:13px;color:var(--ink-soft)}
   .stat .s b{display:block;font-family:"Fraunces",serif;font-size:24px;color:var(--ink);font-weight:600;line-height:1}
 
-  @media(max-width:620px){
-    .destrow{grid-template-columns:1fr;}
-    .logo{font-size:34px}
+  @media(max-width:640px){
+    .wrap{padding:16px 12px 64px}
+    .pad{padding:15px}
+    header.app{gap:8px}
+    .logo{font-size:30px}
+    .logo .build{display:inline-block;margin-top:4px}
     .tagline{display:none}
+    .modepill{padding:4px 5px 4px 12px}
+    /* tabs: one swipeable row instead of wrapping into stacks */
+    nav.tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:16px -12px 16px;padding:0 12px}
+    nav.tabs::-webkit-scrollbar{display:none}
+    nav.tabs button{white-space:nowrap;flex:0 0 auto;padding:10px 12px;font-size:14.5px}
+    h2.sec{font-size:22px}
+    .sub{font-size:13.5px}
+    /* stacking + shrinkable inputs so nothing overflows */
+    .row{gap:10px}
+    .row>*{min-width:0}
+    input[type=text],input[type=date],input[type=password],select,textarea{min-width:0;width:100%}
+    input[type=number]{min-width:0}
+    .destrow{grid-template-columns:1fr}
+    .stat{gap:14px}
+    /* grids collapse */
+    .wcards{grid-template-columns:1fr}
+    .ctargets{grid-template-columns:1fr 1fr}
+    .closet{grid-template-columns:1fr 1fr}
+    /* flow footer stacks: Next on top, then step, then Back */
+    .flownav{flex-direction:column-reverse;align-items:stretch;gap:10px}
+    .flownav .side{display:flex}
+    .flownav .side .btn{width:100%}
+    .flownav .step{text-align:center}
+    /* action bars with a button on the right wrap cleanly */
+    .card.pad .btn{white-space:normal}
+    .modal{max-width:100%}
+    .seg button{padding:6px 10px}
+  }
+  @media(max-width:400px){
+    .closet{grid-template-columns:1fr 1fr}
+    .ctargets{grid-template-columns:1fr}
+    .logo{font-size:26px}
   }
 </style>
 </head>
@@ -248,7 +283,7 @@
 <div class="wrap">
   <header class="app">
     <div class="brand">
-      <div class="logo">Pack<span class="dot">·</span>wise <span class="build">build Jun 7 · v16</span></div>
+      <div class="logo">Pack<span class="dot">·</span>wise <span class="build">build Jun 7 · v21</span></div>
       <div class="tagline">Multi-stop trips, real forecasts, and your own closet — packed.</div>
     </div>
     <div class="modepill">
@@ -274,6 +309,7 @@
   <section class="panel on" id="p-trip">
     <h2 class="sec">Plan the trip</h2>
     <p class="sub">Add each place you'll stay and how many nights. Pick a start date and the activity tags for each stop — those drive both the forecast lookup and what ends up on your list.</p>
+    <div id="todayCard" class="card pad" style="display:none;margin-bottom:16px;border-color:var(--sea);background:linear-gradient(135deg,rgba(47,111,107,.1),rgba(224,161,60,.12))"></div>
     <div class="card pad">
       <div class="row" style="margin-bottom:18px">
         <div style="flex:2;min-width:200px"><label class="f">Trip name</label><input type="text" id="tripName" placeholder="e.g. Croatia coast + Vienna"></div>
@@ -320,14 +356,17 @@
       <div class="prog"><div id="progBar"></div></div>
       <span class="progtxt" id="progTxt">0 / 0 packed</span>
     </div>
-    <div class="row" style="margin-bottom:18px">
-      <input type="text" id="newItem" placeholder="Add your own item…" style="flex:2;min-width:180px">
-      <select id="newCat" style="flex:1;min-width:140px">
-        <option>Essentials</option><option>Clothing</option><option>Layers & outerwear</option>
-        <option>Footwear</option><option>Toiletries</option><option>Tech</option>
-        <option>Activity gear</option><option>Documents</option>
-      </select>
-      <button class="btn sm" id="addItemBtn">Add</button>
+    <div class="card pad" style="margin-bottom:18px;border-color:var(--sun)">
+      <label class="f">➕ Add anything to remember (chargers, passport, meds…)</label>
+      <div class="row">
+        <input type="text" id="newItem" placeholder="Type an item and tap Add…" style="flex:2;min-width:180px">
+        <select id="newCat" style="flex:1;min-width:140px">
+          <option>Essentials</option><option>Clothing</option><option>Layers & outerwear</option>
+          <option>Footwear</option><option>Toiletries</option><option>Tech</option>
+          <option>Activity gear</option><option>Documents</option>
+        </select>
+        <button class="btn terra sm" id="addItemBtn">Add</button>
+      </div>
     </div>
     <div id="packList"></div>
   </section>
@@ -413,28 +452,38 @@
       <p class="hint" id="backupStatus" style="margin-top:10px"></p>
     </div>
 
+    <div class="card pad" id="spaceCard">
+      <h3 style="margin-top:0;font-family:Fraunces,serif">Your private space</h3>
+      <p class="hint">Everyone who uses Packwise gets their own space, so people only see their own clothes. This is your private access code — <b>save it</b> to open your closet on another device. Keep it private: anyone with this code can see your things.</p>
+      <div class="row" style="margin-top:12px;align-items:center">
+        <div style="flex:2;min-width:200px"><label class="f">Your space code</label><input type="text" id="spaceCode" readonly></div>
+        <button class="btn sm" id="copySpace">Copy</button>
+      </div>
+      <details class="setup" style="margin-top:14px">
+        <summary>Use a different code (open your space on another device, or start fresh)</summary>
+        <div class="row" style="margin-top:10px;align-items:center">
+          <input type="text" id="spaceEnter" placeholder="paste an existing code" style="flex:2;min-width:180px">
+          <button class="btn sea sm" id="spaceUse">Use this code</button>
+          <button class="btn ghost sm" id="spaceNew">New space</button>
+        </div>
+        <p class="hint" style="margin:8px 0 0">To share Packwise with someone, just send them your site link — they open it, get their <i>own</i> code, and their closet stays separate from yours.</p>
+      </details>
+    </div>
+
     <div class="card pad">
-      <h3 style="margin-top:0;font-family:Fraunces,serif">Live mode (Airtable + Netlify)</h3>
-      <p class="hint">The frontend calls <code>/.netlify/functions/airtable</code>. Set your token as a Netlify environment variable named <code>AIRTABLE_PAT</code> and your base id below (saved in this browser only).</p>
+      <h3 style="margin-top:0;font-family:Fraunces,serif">Auto-save across your devices (Airtable)</h3>
+      <p class="hint">Your <b>Packwise</b> base is already created. Turn this on and the app saves everything automatically on every change — no Export button to remember — and loads it on your other devices too.</p>
       <div class="row" style="margin-top:12px">
-        <div style="flex:2;min-width:220px"><label class="f">Airtable Base ID</label><input type="text" id="cfgBase" placeholder="appXXXXXXXXXXXXXX"></div>
+        <div style="flex:2;min-width:220px"><label class="f">Airtable Base ID (already filled in)</label><input type="text" id="cfgBase" placeholder="appXXXXXXXXXXXXXX"></div>
         <button class="btn sm" id="saveCfg">Save & connect</button>
       </div>
       <p class="hint" id="connStatus" style="margin-top:10px"></p>
 
       <details class="setup" open>
-        <summary>Airtable tables to create</summary>
-        <p class="hint" style="margin:10px 0">Create these three tables in your base. Field names matter — match them exactly.</p>
-        <table class="tbl">
-          <tr><th>Table</th><th>Fields</th></tr>
-          <tr><td><b>Closet</b></td><td><code>Name</code> (text) · <code>Category</code> (single select) · <code>Color</code> (text) · <code>Warmth</code> (number 1–5) · <code>Tags</code> (multi-select) · <code>Photo</code> (attachment)</td></tr>
-          <tr><td><b>Trips</b></td><td><code>Name</code> (text) · <code>StartDate</code> (date) · <code>Destinations</code> (long text / JSON)</td></tr>
-          <tr><td><b>Packing</b></td><td><code>Trip</code> (link to Trips) · <code>Text</code> (text) · <code>Category</code> (text) · <code>Qty</code> (number) · <code>Packed</code> (checkbox) · <code>Reason</code> (text)</td></tr>
-        </table>
-      </details>
-      <details class="setup">
-        <summary>Netlify Function (airtable.js) & deploy</summary>
-        <p class="hint" style="margin:10px 0">Drop the included <code>netlify/functions/airtable.js</code> and <code>netlify.toml</code> next to this file, add the <code>AIRTABLE_PAT</code> env var in Netlify, and deploy. The function proxies all reads/writes so the token stays server-side.</p>
+        <summary>One-time setup (~3 minutes, on your Mac)</summary>
+        <p class="hint" style="margin:10px 0">1. Create an Airtable <b>personal access token</b> at <code>airtable.com/create/tokens</code> with scopes <code>data.records:read</code> + <code>data.records:write</code>, given access to the <b>Packwise</b> base.<br>
+        2. In Netlify → your site → <b>Site settings → Environment variables</b>, add <code>AIRTABLE_PAT</code> = your token, then redeploy.<br>
+        3. Back here the Base ID is already filled — tap <b>Save &amp; connect</b>, then flip the top toggle to <b>Live</b>. From then on it auto-connects and auto-saves.</p>
       </details>
     </div>
 
@@ -482,6 +531,12 @@
   </div>
 </div>
 
+<div class="scrim" id="welcome">
+  <div class="modal" style="max-width:410px">
+    <div class="mb" id="welcomeBody"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -526,7 +581,7 @@ function seed(){
     packing:[],
     outfits:[],
     selected:[],
-    cfg:{base:''}
+    cfg:{base:'appM4Yzz1xE0cKKfD'}
   };
 }
 function demoCloset(){
@@ -547,7 +602,26 @@ function demoCloset(){
   ];
 }
 
-function save(){if(mode==='demo'){try{localStorage.setItem('packwise',JSON.stringify(state));}catch(e){toast('Storage full — export a backup (Setup) or deploy to keep adding photos');}}}
+let stateSyncT;
+function serializeState(){
+  const s=JSON.parse(JSON.stringify(state));
+  if(s.trip)delete s.trip._weather;
+  return s;
+}
+async function saveStateToAirtable(){
+  try{
+    await api({action:'saveState',data:JSON.stringify(serializeState())});
+    const el=$('#connStatus');if(el)el.textContent='Saved to Airtable ✓ '+new Date().toLocaleTimeString();
+  }catch(e){const el=$('#connStatus');if(el)el.textContent='Could not save to Airtable — check your connection.';}
+}
+function save(){
+  if(mode==='airtable'){
+    try{localStorage.setItem('packwise_live',JSON.stringify(state));}catch(e){}
+    clearTimeout(stateSyncT);stateSyncT=setTimeout(saveStateToAirtable,900);
+    return;
+  }
+  try{localStorage.setItem('packwise',JSON.stringify(state));}catch(e){toast('Storage full — export a backup (Setup) or deploy to keep adding photos');}
+}
 function load(){try{return JSON.parse(localStorage.getItem('packwise'));}catch(e){return null;}}
 
 /* ---------- tabs ---------- */
@@ -566,8 +640,8 @@ $('#modeSeg').addEventListener('click',async e=>{
   $$('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));
   if(mode==='airtable'){
     if(!state.cfg.base){toast('Add your Base ID in Setup first');goTab('setup');}
-    else{await pullAirtable();}
-  }else{state=load()||seed();renderAll();}
+    else{if(!userKey)setUserKey(makeUserKey());localStorage.setItem('packwise_mode','airtable');renderSpaceCard();await pullAirtable();}
+  }else{localStorage.setItem('packwise_mode','demo');state=load()||seed();renderAll();}
 });
 
 /* ---------- TRIP rendering ---------- */
@@ -1158,6 +1232,36 @@ async function handlePhotoFiles(files,forcedCat){
 })();
 
 /* ---------- OUTFITS ---------- */
+function tripDayIndex(){
+  if(!state.trip.start)return -1;
+  const start=new Date(state.trip.start);start.setHours(0,0,0,0);
+  const today=new Date();today.setHours(0,0,0,0);
+  const total=state.trip.destinations.reduce((s,d)=>s+(+d.days||0),0);
+  const idx=Math.round((today-start)/864e5);
+  return (idx>=0&&idx<Math.max(1,total))?idx:-1;
+}
+function outfitPiecesHTML(o){
+  const pieces=o.itemIds.map(id=>{const it=(state.closet||[]).find(c=>c.id===id);if(!it)return '';const ph=it.photo?`<img src="${it.photo}">`:(it.emoji||'👕');return `<div class="piece"><div class="pi">${ph}</div><div class="pn">${it.name}</div></div>`;}).join('');
+  return pieces;
+}
+function renderTodayCard(){
+  const box=$('#todayCard');if(!box)return;
+  const idx=tripDayIndex();
+  if(idx<0){box.style.display='none';box.innerHTML='';return;}
+  box.style.display='block';
+  const dateStr=fmt(addDays(new Date(state.trip.start),idx));
+  const todays=(state.outfits||[]).filter(o=>o.day===idx);
+  let inner=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div><div style="font-family:Fraunces,serif;font-size:20px;font-weight:600">👕 Today's outfit</div><div class="hint">Day ${idx+1} of your trip · ${dateStr}</div></div>
+      <button class="btn ghost sm" id="todayGo">Plan / change →</button></div>`;
+  if(todays.length){
+    inner+=todays.map(o=>`<div style="margin-top:12px"><div style="font-weight:600;font-size:14px;margin-bottom:6px">${o.name}</div><div class="pieces" style="padding:0">${outfitPiecesHTML(o)}</div></div>`).join('');
+  }else{
+    inner+=`<p class="hint" style="margin:12px 0 0">No outfit set for today yet — tap “Plan / change” to pick one on the Outfits tab.</p>`;
+  }
+  box.innerHTML=inner;
+  const go=$('#todayGo');if(go)go.addEventListener('click',()=>goTab('outfits'));
+}
 function updateSel(){
   const n=state.selected.length;
   const lab=$('#obLabel');if(lab)lab.textContent=n>0?`${n} piece(s) selected — save as one outfit, or auto-make every combo`:'Tap the pieces you want to bring — then save one outfit, or auto-make every combo';
@@ -1281,7 +1385,7 @@ function renderOutfits(){
       return `<div class="piece"><div class="pi">${ph}</div><div class="pn">${it.name}</div></div>`;
     }).join('');
     el.innerHTML=`<div class="ohead"><span class="onm">${o.name}</span><span style="display:flex;gap:8px;align-items:center"><select class="oday-sel sm">${dayOptionsHTML(o.day)}</select><button class="x" data-del style="font-size:20px">×</button></span></div><div class="pieces">${pieces||'<span class="hint">Pieces no longer in closet</span>'}</div>`;
-    el.querySelector('.oday-sel').addEventListener('change',e=>{o.day=e.target.value===''?null:+e.target.value;save();renderOutfits();});
+    el.querySelector('.oday-sel').addEventListener('change',e=>{o.day=e.target.value===''?null:+e.target.value;save();renderOutfits();renderTodayCard();});
     el.querySelector('[data-del]').addEventListener('click',()=>{state.outfits=state.outfits.filter(x=>x!==o);renderOutfits();save();});
     wrap.appendChild(el);
   });
@@ -1289,54 +1393,75 @@ function renderOutfits(){
 }
 
 /* ---------- AIRTABLE (via Netlify function proxy) ---------- */
+let userKey=localStorage.getItem('packwise_user')||'';
+function makeUserKey(name){
+  const slug=(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,20);
+  const rand=Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,6);
+  return (slug?slug+'-':'')+rand;
+}
+function setUserKey(k){userKey=k;localStorage.setItem('packwise_user',k);}
 async function api(payload){
-  const r=await fetch('/.netlify/functions/airtable',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base:state.cfg.base,...payload})});
+  const r=await fetch('/.netlify/functions/airtable',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base:state.cfg.base,userKey,...payload})});
   if(!r.ok)throw new Error('proxy '+r.status);
   return r.json();
 }
 async function pullAirtable(){
   try{
-    const cl=await api({action:'list',table:'Closet'});
-    state.closet=(cl.records||[]).map(r=>({
-      id:r.id,name:r.fields.Name||'Item',Category:r.fields.Category||'Top',
-      Warmth:r.fields.Warmth||3,Color:r.fields.Color||'',tags:r.fields.Tags||[],
-      photo:(r.fields.Photo&&r.fields.Photo[0])?(r.fields.Photo[0].thumbnails?.large?.url||r.fields.Photo[0].url):null,emoji:null
-    }));
-    renderAll();$('#connStatus').textContent=`Connected — ${state.closet.length} closet items loaded.`;
-    toast('Connected to Airtable');
-  }catch(e){$('#connStatus').textContent='Could not reach the Netlify function. Deploy with AIRTABLE_PAT set, or stay in Demo mode.';toast('Live connection failed');}
-}
-async function createClosetAirtable(item,dataURL){
-  try{
-    const res=await api({action:'create',table:'Closet',fields:{Name:item.name,Category:item.Category,Warmth:item.Warmth,Color:item.Color}});
-    if(dataURL&&res.id){
-      const m=dataURL.match(/^data:([^;]+);base64,(.*)$/);
-      if(m){await api({action:'upload',table:'Closet',recordId:res.id,field:'Photo',filename:'photo.'+((m[1].split('/')[1]||'jpg')),contentType:m[1],b64:m[2]});}
+    const res=await api({action:'loadState'});
+    const rec=(res.records||[])[0];
+    if(rec&&rec.fields&&rec.fields.Data){
+      const base=state.cfg.base;
+      state=JSON.parse(rec.fields.Data);
+      if(!state.trip)state=seed();
+      if(!state.trip.laundry)state.trip.laundry={available:false,intervalDays:4};
+      if(!state.cfg)state.cfg={base:''};
+      state.cfg.base=base;state.selected=state.selected||[];
+      renderAll();
+      $('#connStatus').textContent='Connected — loaded your saved data from Airtable ✓';
+      toast('Loaded from Airtable');
+    }else{
+      // first time on this base: push whatever is here now
+      await saveStateToAirtable();renderAll();
+      $('#connStatus').textContent='Connected — now auto-saving to Airtable ✓';
+      toast('Connected — auto-saving on');
     }
-  }catch(e){toast('Saved locally; Airtable write failed');}
+  }catch(e){$('#connStatus').textContent='Could not reach Airtable. Check the AIRTABLE_PAT env var and Base ID on Netlify, or stay in Demo.';toast('Live connection failed');mode='demo';$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='demo'));localStorage.setItem('packwise_mode','demo');}
 }
-async function updateClosetAirtable(item,newPhotoDataURL){
-  try{
-    const fields={Name:item.name,Category:item.Category,Warmth:item.Warmth,Color:item.Color};
-    if(newPhotoDataURL!==null)fields.Photo=[]; // clear before re-uploading
-    await api({action:'update',table:'Closet',recordId:item.id,fields});
-    if(newPhotoDataURL){
-      const m=newPhotoDataURL.match(/^data:([^;]+);base64,(.*)$/);
-      if(m){await api({action:'upload',table:'Closet',recordId:item.id,field:'Photo',filename:'photo.'+((m[1].split('/')[1]||'jpg')),contentType:m[1],b64:m[2]});}
-    }
-  }catch(e){toast('Saved locally; Airtable update failed');}
-}
-let syncT;
-function syncPackingToAirtable(){clearTimeout(syncT);syncT=setTimeout(async()=>{
-  const items=(state.packing||[]).map(p=>({text:p.text,category:p.category,qty:p.qty,reason:p.reason,packed:lineDone(p)}));
-  try{await api({action:'savePacking',tripName:state.trip.name,items});}catch(e){}
-},800);}
+/* per-entity writes are no longer needed — the whole state is saved as one record */
+async function createClosetAirtable(){}
+async function updateClosetAirtable(){}
+function syncPackingToAirtable(){}
 
 $('#saveCfg').addEventListener('click',async()=>{
   state.cfg.base=$('#cfgBase').value.trim();
   if(!state.cfg.base){toast('Enter your Base ID');return;}
   localStorage.setItem('packwise_cfg',JSON.stringify(state.cfg));
+  if(!userKey)setUserKey(makeUserKey());
+  renderSpaceCard();
   $('#modeSeg button[data-mode="airtable"]').click();
+});
+function renderSpaceCard(){
+  const inp=$('#spaceCode');if(inp)inp.value=userKey||'(created when you go Live)';
+}
+$('#copySpace').addEventListener('click',()=>{
+  if(!userKey){toast('Turn on Live first to create your code');return;}
+  navigator.clipboard&&navigator.clipboard.writeText(userKey);toast('Code copied — save it somewhere safe');
+});
+$('#spaceUse').addEventListener('click',async()=>{
+  const k=$('#spaceEnter').value.trim();
+  if(!/^[A-Za-z0-9_-]{6,64}$/.test(k)){toast('That code doesn’t look right');return;}
+  setUserKey(k);$('#spaceEnter').value='';renderSpaceCard();
+  localStorage.setItem('packwise_mode','airtable');
+  mode='airtable';$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='airtable'));
+  await pullAirtable();toast('Opened that space');
+});
+$('#spaceNew').addEventListener('click',()=>{
+  if(!confirm('Start a brand-new empty space? Your current code will be replaced (save it first if you want to keep it).'))return;
+  setUserKey(makeUserKey());renderSpaceCard();
+  state=seed();state.cfg.base=$('#cfgBase').value.trim()||state.cfg.base;
+  localStorage.setItem('packwise_mode','airtable');mode='airtable';
+  $$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='airtable'));
+  save();renderAll();renderSpaceCard();toast('New space created');
 });
 
 /* ---------- BACKUP: export / import ---------- */
@@ -1380,9 +1505,12 @@ function renderAll(){
   $('#tripName').value=state.trip.name||'';
   $('#tripStart').value=state.trip.start||'';
   $('#cfgBase').value=state.cfg?.base||'';
-  renderDestinations();renderTripStats();renderPacking();renderCloset();renderOutfits();updateSel();syncUnitSeg();
+  renderDestinations();renderTripStats();renderPacking();renderCloset();renderOutfits();updateSel();syncUnitSeg();renderTodayCard();
+  if(typeof renderSpaceCard==='function')renderSpaceCard();
 }
 try{const c=JSON.parse(localStorage.getItem('packwise_cfg'));if(c)state.cfg=c;}catch(e){}
+if(!state.cfg)state.cfg={base:''};
+if(!state.cfg.base)state.cfg.base='appM4Yzz1xE0cKKfD';
 $('#buildBtn').addEventListener('click',buildForecast);
 
 /* ---------- guided flow: a Next button connecting each page ---------- */
@@ -1418,6 +1546,54 @@ function injectFlowNav(){
 }
 injectFlowNav();
 renderAll();
+
+/* ---------- first-run welcome (as simple as possible) ---------- */
+function connectLiveUI(){if(state.cfg.base){mode='airtable';$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='airtable'));localStorage.setItem('packwise_mode','airtable');}}
+function welcomeStep1(){
+  $('#welcomeBody').innerHTML=`
+    <div style="font-family:Fraunces,serif;font-size:24px;font-weight:600;margin-bottom:6px">Welcome to Packwise</div>
+    <p class="hint" style="margin:0 0 16px">Your own private closet and packing helper. What should we call you?</p>
+    <input type="text" id="wName" placeholder="Your first name" style="margin-bottom:12px">
+    <button class="btn terra" id="wContinue" style="width:100%">Continue →</button>
+    <button class="btn ghost sm" id="wHaveCode" style="width:100%;margin-top:10px">I already have a code</button>`;
+  $('#wContinue').addEventListener('click',()=>{setUserKey(makeUserKey($('#wName').value.trim()));connectLiveUI();welcomeStep2($('#wName').value.trim());});
+  $('#wHaveCode').addEventListener('click',welcomeCode);
+  setTimeout(()=>$('#wName')&&$('#wName').focus(),50);
+}
+function welcomeStep2(name){
+  $('#welcomeBody').innerHTML=`
+    <div style="font-family:Fraunces,serif;font-size:24px;font-weight:600;margin-bottom:6px">You're all set${name?', '+name:''}!</div>
+    <p class="hint" style="margin:0 0 14px"><b>Save this code.</b> It's how you open your closet on your phone, iPad, or laptop — and it keeps your things private to you.</p>
+    <div class="row" style="align-items:center"><input type="text" id="wCode" readonly value="${userKey}" style="flex:2"><button class="btn sm" id="wCopy">Copy</button></div>
+    <button class="btn terra" id="wStart" style="width:100%;margin-top:16px">Start packing →</button>`;
+  $('#wCopy').addEventListener('click',()=>{try{navigator.clipboard.writeText(userKey);}catch(e){}toast('Code copied — keep it safe');});
+  $('#wStart').addEventListener('click',finishWelcome);
+}
+function welcomeCode(){
+  $('#welcomeBody').innerHTML=`
+    <div style="font-family:Fraunces,serif;font-size:24px;font-weight:600;margin-bottom:6px">Enter your code</div>
+    <p class="hint" style="margin:0 0 14px">Paste the code from your other device to open your closet here.</p>
+    <input type="text" id="wEnter" placeholder="your code" style="margin-bottom:12px">
+    <button class="btn terra" id="wEnterGo" style="width:100%">Open my closet →</button>
+    <button class="btn ghost sm" id="wBack" style="width:100%;margin-top:10px">← Back</button>`;
+  $('#wEnterGo').addEventListener('click',()=>{const k=$('#wEnter').value.trim();if(!/^[A-Za-z0-9_-]{6,64}$/.test(k)){toast('That code doesn’t look right');return;}setUserKey(k);connectLiveUI();finishWelcome();});
+  $('#wBack').addEventListener('click',welcomeStep1);
+}
+async function finishWelcome(){
+  localStorage.setItem('packwise_onboarded','1');
+  $('#welcome').classList.remove('on');
+  renderSpaceCard();
+  if(mode==='airtable'&&state.cfg.base){try{await pullAirtable();}catch(e){}}
+  goTab('trip');
+}
+// Auto-reconnect to Airtable if this device was using Live mode
+if(localStorage.getItem('packwise_mode')==='airtable'&&state.cfg&&state.cfg.base&&userKey){
+  mode='airtable';
+  $$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='airtable'));
+  pullAirtable();
+}
+// Show welcome only for brand-new visitors
+if(!localStorage.getItem('packwise_onboarded')&&!userKey){$('#welcome').classList.add('on');welcomeStep1();}
 </script>
 </body>
 </html>
