@@ -4,6 +4,12 @@
 
 const PAT = process.env.AIRTABLE_PAT;
 
+// user keys must be our own tokens: letters, digits, _ or -, 6..64 chars.
+// This also prevents any formula injection since no quotes/parens are possible.
+function safeKey(k) {
+  return typeof k === "string" && /^[A-Za-z0-9_-]{6,64}$/.test(k) ? k : null;
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return resp(405, { error: "Method not allowed" });
@@ -24,6 +30,32 @@ exports.handler = async (event) => {
 
   try {
     switch (action) {
+      case "loadState": {
+        const key = safeKey(body.userKey);
+        if (!key) return resp(400, { error: "Missing or invalid user key" });
+        const url = `${apiBase}/AppState?maxRecords=1&filterByFormula=${encodeURIComponent("{Key}='" + key + "'")}`;
+        const r = await fetch(url, { headers });
+        return passthrough(r);
+      }
+      case "saveState": {
+        const key = safeKey(body.userKey);
+        if (!key) return resp(400, { error: "Missing or invalid user key" });
+        const listUrl = `${apiBase}/AppState?maxRecords=1&filterByFormula=${encodeURIComponent("{Key}='" + key + "'")}`;
+        const list = await (await fetch(listUrl, { headers })).json();
+        const rec = (list.records || [])[0];
+        const fields = { Key: key, Data: body.data, UpdatedAt: new Date().toISOString() };
+        if (rec) {
+          const r = await fetch(`${apiBase}/AppState/${rec.id}`, {
+            method: "PATCH", headers, body: JSON.stringify({ fields }),
+          });
+          return passthrough(r);
+        } else {
+          const r = await fetch(`${apiBase}/AppState`, {
+            method: "POST", headers, body: JSON.stringify({ fields }),
+          });
+          return passthrough(r);
+        }
+      }
       case "list": {
         const r = await fetch(`${apiBase}/${encodeURIComponent(table)}?pageSize=100`, { headers });
         return passthrough(r);
