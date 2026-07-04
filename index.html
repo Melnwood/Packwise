@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Packwise — Weather-smart trip packing</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="theme-color" content="#c75b39">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Packwise">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5efe4;
+    --paper-2:#efe6d6;
+    --ink:#2b2118;
+    --ink-soft:#6a5d4d;
+    --terra:#c75b39;
+    --terra-deep:#a4421f;
+    --sea:#2f6f6b;
+    --sea-deep:#1f4f4c;
+    --sun:#e0a13c;
+    --line:#d8cab3;
+    --card:#fffdf8;
+    --shadow:0 1px 0 #fff inset, 0 18px 40px -24px rgba(43,33,24,.45);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Hanken Grotesk",system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(120% 80% at 85% -10%, rgba(224,161,60,.18), transparent 55%),
+      radial-gradient(120% 90% at -10% 0%, rgba(47,111,107,.14), transparent 50%),
+      var(--paper);
+    background-attachment:fixed;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  }
+  .wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+
+  /* Header */
+  header.app{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+  .brand{display:flex;align-items:baseline;gap:12px}
+  .logo{
+    font-family:"Fraunces",serif;font-weight:900;font-size:42px;letter-spacing:-.02em;line-height:.9;
+    color:var(--ink);
+  }
+  .logo .dot{color:var(--terra)}
+  .logo .build{font-family:"Hanken Grotesk",sans-serif;font-weight:700;font-size:11px;letter-spacing:.04em;color:#fff;background:var(--terra);padding:2px 8px;border-radius:999px;vertical-align:middle;margin-left:6px}
+  .tagline{font-size:13.5px;color:var(--ink-soft);max-width:230px;border-left:2px solid var(--line);padding-left:12px}
+  .modepill{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 6px 5px 14px;box-shadow:var(--shadow)}
+  .modepill .lbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  .seg{display:flex;background:var(--paper-2);border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;font:inherit;font-weight:600;font-size:12.5px;color:var(--ink-soft);padding:6px 12px;border-radius:999px;cursor:pointer}
+  .seg button.on{background:var(--ink);color:var(--paper)}
+
+  /* Tabs */
+  nav.tabs{display:flex;gap:4px;flex-wrap:wrap;margin:22px 0 18px;border-bottom:1.5px solid var(--line)}
+  nav.tabs button{
+    border:0;background:transparent;font:inherit;font-weight:600;font-size:15px;color:var(--ink-soft);
+    padding:10px 16px;cursor:pointer;position:relative;border-radius:10px 10px 0 0;
+  }
+  nav.tabs button .ct{font-size:11px;background:var(--paper-2);border-radius:999px;padding:1px 7px;margin-left:6px;color:var(--ink-soft);vertical-align:1px}
+  nav.tabs button.on{color:var(--ink)}
+  nav.tabs button.on::after{content:"";position:absolute;left:12px;right:12px;bottom:-1.5px;height:3px;background:var(--terra);border-radius:3px}
+
+  .panel{display:none;animation:rise .4s ease both}
+  .panel.on{display:block}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  h2.sec{font-family:"Fraunces",serif;font-weight:600;font-size:26px;letter-spacing:-.01em;margin:4px 0 4px}
+  .sub{color:var(--ink-soft);font-size:14px;margin:0 0 20px;max-width:60ch}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .pad{padding:20px}
+
+  label.f{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;margin-bottom:6px}
+  input[type=text],input[type=date],input[type=number],input[type=password],select,textarea{
+    width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--paper);
+    border:1.5px solid var(--line);border-radius:11px;padding:11px 13px;outline:none;transition:border-color .15s,box-shadow .15s;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--sea);box-shadow:0 0 0 3px rgba(47,111,107,.15)}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;font:inherit;font-weight:600;font-size:14.5px;cursor:pointer;
+    border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:11px;padding:10px 16px;
+    transition:transform .12s,filter .12s,background .15s;
+  }
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+  .btn:active{transform:translateY(0)}
+  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn.terra{background:var(--terra);border-color:var(--terra)}
+  .btn.sea{background:var(--sea);border-color:var(--sea)}
+  .btn.sm{padding:7px 12px;font-size:13px;border-radius:9px}
+  .btn.icon{padding:8px;width:36px;height:36px;justify-content:center;border-radius:9px}
+
+  .grid{display:grid;gap:16px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+
+  /* Destinations */
+  .destrow{display:grid;grid-template-columns:1.6fr .7fr auto;gap:12px;align-items:end}
+  .chiprow{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+  .achip{font-size:12.5px;font-weight:600;border:1.5px solid var(--line);background:var(--paper);color:var(--ink-soft);border-radius:999px;padding:5px 11px;cursor:pointer;user-select:none;transition:all .12s}
+  .achip.on{background:var(--sea);border-color:var(--sea);color:#fff}
+  .achip .em{margin-right:4px}
+
+  /* Weather cards */
+  .wcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+  .wcard{position:relative;overflow:hidden;border-radius:var(--radius);border:1px solid var(--line);color:#fff;min-height:188px;display:flex;flex-direction:column;justify-content:space-between;padding:18px;box-shadow:var(--shadow)}
+  .wcard .place{font-family:"Fraunces",serif;font-size:23px;font-weight:600;line-height:1.05}
+  .wcard .dates{font-size:12.5px;opacity:.92;margin-top:2px}
+  .wcard .big{font-size:40px;font-weight:700;font-family:"Fraunces",serif;letter-spacing:-.02em}
+  .wcard .cond{font-size:14px;opacity:.95}
+  .wcard .meta{display:flex;gap:14px;font-size:12.5px;opacity:.95;margin-top:6px;flex-wrap:wrap}
+  .srcbadge{position:absolute;top:12px;right:12px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;background:rgba(255,255,255,.22);backdrop-filter:blur(4px);padding:3px 9px;border-radius:999px}
+  .wicon{font-size:30px}
+
+  /* Packing list */
+  .pcat{margin-bottom:18px}
+  .pcat h3{font-family:"Fraunces",serif;font-weight:600;font-size:18px;margin:0 0 4px;display:flex;align-items:center;gap:9px}
+  .pcat h3 .n{font-size:12px;font-weight:600;color:var(--ink-soft);background:var(--paper-2);border-radius:999px;padding:2px 9px}
+  .pitem{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid var(--line);border-radius:11px;background:var(--paper);margin-top:8px;transition:background .15s}
+  .pitem.done{background:var(--paper-2)}
+  .pitem.done .ptext{text-decoration:line-through;color:var(--ink-soft)}
+  .chk{appearance:none;width:21px;height:21px;border:2px solid var(--sea);border-radius:6px;cursor:pointer;flex:0 0 auto;position:relative;transition:background .12s}
+  .chk:checked{background:var(--sea)}
+  .chk:checked::after{content:"✓";color:#fff;font-size:14px;position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .ptext{flex:1;font-size:15px}
+  .pqty{font-size:12.5px;font-weight:700;color:var(--terra-deep);background:rgba(199,91,57,.1);border-radius:7px;padding:2px 8px;flex:0 0 auto}
+  .preason{font-size:11.5px;color:var(--sea-deep);background:rgba(47,111,107,.1);border-radius:999px;padding:2px 9px;flex:0 0 auto}
+  .pdel{opacity:0;border:0;background:transparent;cursor:pointer;color:var(--ink-soft);font-size:18px;padding:0 4px;transition:opacity .15s}
+  .pitem:hover .pdel{opacity:1}
+  .pitem.fill{flex-wrap:wrap}
+  .chk.auto{display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;background:var(--paper-2);border-color:var(--line)}
+  .chk.auto.on{background:var(--sea);border-color:var(--sea)}
+  .pcount{font-size:12px;font-weight:700;color:var(--sea-deep);background:rgba(47,111,107,.12);border-radius:7px;padding:2px 8px;flex:0 0 auto}
+  .ptags{display:flex;align-items:center;gap:7px;flex-wrap:wrap;width:100%;margin-top:4px;padding-left:33px}
+  .ptag{width:38px;height:38px;border-radius:9px;border:1px solid var(--line);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;background:var(--ph,#eaddc7);position:relative}
+  .ptag img{width:100%;height:100%;object-fit:cover}
+  .ptag:hover::after{content:"×";position:absolute;inset:0;background:rgba(43,33,24,.6);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;border-radius:9px}
+  .addcloset{border:1.5px dashed var(--sea);background:transparent;color:var(--sea-deep);font:inherit;font-weight:600;font-size:12.5px;border-radius:9px;padding:8px 12px;cursor:pointer;height:38px}
+  .addcloset:hover{background:rgba(47,111,107,.08)}
+  .item.used{opacity:.55}
+  .item .usedbadge{position:absolute;bottom:44px;left:8px;font-size:10px;font-weight:700;background:var(--sea);color:#fff;border-radius:999px;padding:2px 8px}
+  .item .packedbadge{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:var(--sea);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .item .itemdel{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(43,33,24,.55);color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;line-height:1;padding:0}
+  .item .itemdel:hover,.item .itemdel:active{background:var(--terra)}
+  .item .itemedit{position:absolute;top:6px;right:42px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(43,33,24,.55);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;line-height:1;padding:0}
+  .item .itemedit:hover,.item .itemedit:active{background:var(--sea)}
+  .dropzone{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:22px 16px;margin-bottom:18px;border:2px dashed var(--line);border-radius:var(--radius);color:var(--ink-soft);background:var(--paper-2);cursor:pointer;transition:all .15s}
+  .dropzone .em{font-size:30px}
+  .dropzone:hover{border-color:var(--sea)}
+  .dropzone.over{border-color:var(--sea);background:rgba(47,111,107,.1);color:var(--sea-deep);transform:scale(1.01)}
+  .progwrap{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+  .prog{flex:1;height:12px;background:var(--paper-2);border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+  .prog>div{height:100%;background:linear-gradient(90deg,var(--sea),var(--sun));width:0;transition:width .4s}
+  .progtxt{font-weight:700;font-size:14px;white-space:nowrap}
+  .capsule{background:linear-gradient(135deg,rgba(47,111,107,.1),rgba(224,161,60,.12));border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:18px}
+  .capsule h3{font-family:"Fraunces",serif;font-weight:600;font-size:19px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+  .capsule .lead{font-size:14px;color:var(--ink);margin:0 0 14px}
+  .capsule .lead b{color:var(--sea-deep)}
+  .ctargets{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:6px}
+  .ctile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .ctile .num{font-family:"Fraunces",serif;font-size:22px;font-weight:600;line-height:1}
+  .ctile .lbl{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .ctile .have{font-size:11.5px;font-weight:600;margin-top:4px}
+  .ctile .ok{color:var(--sea-deep)}
+  .ctile .need{color:var(--terra-deep)}
+  .capsule .foot{font-size:13px;color:var(--ink-soft);margin-top:10px}
+
+  /* Closet */
+  .closet{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+  .item{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card);box-shadow:var(--shadow);cursor:pointer;transition:transform .12s}
+  .item:hover{transform:translateY(-3px)}
+  .item .img{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:52px;background:var(--ph,linear-gradient(135deg,#e9dcc6,#d9c8a8))}
+  .item .img img{width:100%;height:100%;object-fit:cover}
+  .item .cap{padding:9px 11px}
+  .item .nm{font-weight:600;font-size:13.5px;line-height:1.2}
+  .item .tg{font-size:11px;color:var(--ink-soft);margin-top:2px}
+  .item .warm{position:absolute;top:8px;left:8px;font-size:11px;font-weight:700;background:rgba(255,255,255,.9);border-radius:999px;padding:2px 8px}
+  .item.sel{outline:3px solid var(--terra);outline-offset:-1px}
+  .item .pick{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:var(--terra);color:#fff;display:none;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+  .item.sel .pick{display:flex}
+
+  /* Outfits */
+  .outfit{border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px}
+  .outfit .ohead{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--paper)}
+  .outfit .onm{font-family:"Fraunces",serif;font-weight:600;font-size:18px}
+  .outfit .oday{font-size:12px;font-weight:700;color:var(--sea-deep);background:rgba(47,111,107,.12);border-radius:999px;padding:3px 10px}
+  .outfit .pieces{display:flex;gap:10px;padding:14px 16px;flex-wrap:wrap}
+  .piece{width:74px;text-align:center}
+  .piece .pi{width:74px;height:74px;border-radius:11px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:34px;overflow:hidden;background:var(--ph,#eaddc7)}
+  .piece .pi img{width:100%;height:100%;object-fit:cover}
+  .piece .pn{font-size:10.5px;color:var(--ink-soft);margin-top:3px;line-height:1.1}
+
+  .empty{text-align:center;color:var(--ink-soft);padding:36px 16px;border:2px dashed var(--line);border-radius:var(--radius)}
+  .empty .em{font-size:34px;display:block;margin-bottom:8px}
+  .flownav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:28px;padding-top:18px;border-top:1px solid var(--line)}
+  .flownav .step{font-size:12px;color:var(--ink-soft);font-weight:600;letter-spacing:.03em}
+  .flownav .side{flex:1;display:flex}
+  .flownav .side.right{justify-content:flex-end}
+
+  .hint{font-size:12.5px;color:var(--ink-soft)}
+  details.setup{margin-top:18px}
+  details.setup>summary{cursor:pointer;font-weight:600;color:var(--sea-deep);list-style:none;display:flex;align-items:center;gap:8px}
+  details.setup>summary::-webkit-details-marker{display:none}
+  details.setup>summary::before{content:"▸";transition:transform .2s}
+  details.setup[open]>summary::before{transform:rotate(90deg)}
+  code{background:var(--paper-2);padding:1px 6px;border-radius:6px;font-size:12.5px}
+  .tbl{width:100%;border-collapse:collapse;margin-top:10px;font-size:13.5px}
+  .tbl th,.tbl td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  .tbl th{color:var(--ink-soft);font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+
+  /* Modal */
+  .scrim{position:fixed;inset:0;background:rgba(43,33,24,.5);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:50;padding:18px}
+  .scrim.on{display:flex}
+  .modal{background:var(--card);border-radius:var(--radius);max-width:440px;width:100%;box-shadow:0 30px 80px -20px rgba(43,33,24,.6);max-height:90vh;overflow:auto}
+  .modal .mh{padding:18px 20px;border-bottom:1px solid var(--line);font-family:"Fraunces",serif;font-size:20px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .modal .mb{padding:20px}
+  .x{border:0;background:transparent;font-size:24px;cursor:pointer;color:var(--ink-soft);line-height:1}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:12px 20px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;transition:all .3s;z-index:99;box-shadow:0 12px 30px -8px rgba(0,0,0,.5)}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .stat{display:flex;gap:22px;flex-wrap:wrap;margin-top:6px}
+  .stat .s{font-size:13px;color:var(--ink-soft)}
+  .stat .s b{display:block;font-family:"Fraunces",serif;font-size:24px;color:var(--ink);font-weight:600;line-height:1}
+
+  @media(max-width:620px){
+    .destrow{grid-template-columns:1fr;}
+    .logo{font-size:34px}
+    .tagline{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="brand">
+      <div class="logo">Pack<span class="dot">·</span>wise <span class="build">build Jun 7 · v16</span></div>
+      <div class="tagline">Multi-stop trips, real forecasts, and your own closet — packed.</div>
+    </div>
+    <div class="modepill">
+      <span class="lbl">Data</span>
+      <div class="seg" id="modeSeg">
+        <button data-mode="demo" class="on">Demo</button>
+        <button data-mode="airtable">Live</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="trip" class="on">Trip</button>
+    <button data-tab="weather">Weather</button>
+    <button data-tab="pack">Packing List <span class="ct" id="ctPack">0</span></button>
+    <button data-tab="closet">Closet <span class="ct" id="ctCloset">0</span></button>
+    <button data-tab="capsule">Capsule</button>
+    <button data-tab="outfits">Outfits <span class="ct" id="ctOut">0</span></button>
+    <button data-tab="setup">Setup</button>
+  </nav>
+
+  <!-- TRIP -->
+  <section class="panel on" id="p-trip">
+    <h2 class="sec">Plan the trip</h2>
+    <p class="sub">Add each place you'll stay and how many nights. Pick a start date and the activity tags for each stop — those drive both the forecast lookup and what ends up on your list.</p>
+    <div class="card pad">
+      <div class="row" style="margin-bottom:18px">
+        <div style="flex:2;min-width:200px"><label class="f">Trip name</label><input type="text" id="tripName" placeholder="e.g. Croatia coast + Vienna"></div>
+        <div style="flex:1;min-width:150px"><label class="f">Start date</label><input type="date" id="tripStart"></div>
+      </div>
+      <div id="destList" class="grid"></div>
+      <button class="btn ghost sm" id="addDest" style="margin-top:14px">+ Add destination</button>
+    </div>
+    <div class="card pad" style="margin-top:16px">
+      <label class="f">Laundry on this trip?</label>
+      <div class="row" style="align-items:center;gap:16px">
+        <div class="seg" id="laundrySeg">
+          <button data-l="off" class="on">Pack for every day</button>
+          <button data-l="on">I can wash &amp; re-wear</button>
+        </div>
+        <div id="laundryFreq" style="display:none;align-items:center;gap:8px">
+          <span class="hint">wash about every</span>
+          <input type="number" id="laundryInterval" min="1" max="21" value="4" style="width:64px">
+          <span class="hint">days</span>
+        </div>
+      </div>
+      <p class="hint" id="laundryNote" style="margin:10px 0 0"></p>
+    </div>
+    <div class="card pad" style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <div class="stat" id="tripStats"></div>
+      <button class="btn terra" id="buildBtn">Get forecast & build list →</button>
+    </div>
+  </section>
+
+  <!-- WEATHER -->
+  <section class="panel" id="p-weather">
+    <h2 class="sec">The forecast</h2>
+    <p class="sub" id="weatherSub">Run "Get forecast" from the Trip tab to see conditions for each stop. Forecasts are live up to ~16 days out; beyond that we show typical conditions for that time of year.</p>
+    <div class="seg" id="unitSeg" style="display:inline-flex;margin-bottom:16px"><button data-u="F">°F</button><button data-u="C">°C</button></div>
+    <div class="wcards" id="wcards"></div>
+  </section>
+
+  <!-- PACKING -->
+  <section class="panel" id="p-pack">
+    <h2 class="sec">Packing list</h2>
+    <p class="sub">Generated from the weather, your activities, and trip length. Everything's editable — check things off as you pack, add your own, or delete what you don't need.</p>
+    <div id="capsuleCard"></div>
+    <div class="progwrap">
+      <div class="prog"><div id="progBar"></div></div>
+      <span class="progtxt" id="progTxt">0 / 0 packed</span>
+    </div>
+    <div class="row" style="margin-bottom:18px">
+      <input type="text" id="newItem" placeholder="Add your own item…" style="flex:2;min-width:180px">
+      <select id="newCat" style="flex:1;min-width:140px">
+        <option>Essentials</option><option>Clothing</option><option>Layers & outerwear</option>
+        <option>Footwear</option><option>Toiletries</option><option>Tech</option>
+        <option>Activity gear</option><option>Documents</option>
+      </select>
+      <button class="btn sm" id="addItemBtn">Add</button>
+    </div>
+    <div id="packList"></div>
+  </section>
+
+  <!-- CLOSET -->
+  <section class="panel" id="p-closet">
+    <h2 class="sec">Your closet</h2>
+    <p class="sub">Add the clothes you actually own with a photo, a category, and a warmth rating (1 = summer, 5 = arctic). The packing list and outfit builder both pull from here.</p>
+    <div class="row" style="margin-bottom:18px">
+      <button class="btn terra sm" id="addItemModalBtn">+ Add closet item</button>
+      <button class="btn ghost sm" id="clearClosetBtn">Clear closet</button>
+      <select id="closetFilter" class="sm" style="max-width:200px">
+        <option value="all">All categories</option>
+        <option>Top</option><option>Bottom</option><option>Dress</option><option>Outerwear</option>
+        <option>Footwear</option><option>Swim</option><option>Accessory</option><option>Activewear</option>
+      </select>
+      <label class="achip" style="cursor:pointer"><input type="checkbox" id="weatherFit" style="margin-right:6px">Match this trip's weather</label>
+    </div>
+    <div id="dropZone" class="dropzone">
+      <span class="em">📷</span>
+      <div><b>Drag photos here</b> to add them all at once — then tap <b>✎</b> on each to set category &amp; details</div>
+      <input type="file" id="dropInput" accept="image/*" multiple style="display:none">
+    </div>
+    <div class="closet" id="closetGrid"></div>
+    <div id="outfitBuilder" class="card pad" style="margin-top:18px;border-color:var(--sea)">
+      <label class="f" id="obLabel">Tap the pieces you want to bring — then save one outfit, or auto-make every combo</label>
+      <div class="row" style="align-items:center">
+        <input type="text" id="outfitName" placeholder="Name (for Save as one outfit)" style="flex:2;min-width:160px">
+        <button class="btn sea sm" id="saveOutfit">Save as one outfit</button>
+        <button class="btn ghost sm" id="clearSel">Clear</button>
+      </div>
+      <button class="btn terra" id="autoOutfits" style="margin-top:12px;width:100%">✨ Auto-make outfits from selected pieces</button>
+      <p class="hint" style="margin:10px 0 0"><b>Auto-make</b> builds complete outfits — each one is a <b>shirt + bottom + shoes</b> (a dress can stand in for shirt+bottom). Select some of each, and it mixes every combination. You keep the ones you like and set days on the Outfits tab.</p>
+    </div>
+  </section>
+
+  <!-- CAPSULE -->
+  <section class="panel" id="p-capsule">
+    <h2 class="sec">Capsule challenge</h2>
+    <p class="sub">Pick a set of pieces that all mix together, add a photo of each, and we turn them into complete outfits for you to choose from. A few items, lots of looks.</p>
+
+    <div class="card pad">
+      <label class="f">Capsule size</label>
+      <p class="hint" id="capSuggestLine" style="margin:0 0 10px"></p>
+      <div class="row" id="capCountChips" style="align-items:center">
+        <span class="achip" data-n="9">9 pieces</span>
+        <span class="achip" data-n="12">12 pieces</span>
+        <span class="achip" data-n="16">16 pieces</span>
+        <span style="display:flex;align-items:center;gap:8px"><span class="hint">or custom</span><input type="number" id="capCustom" min="3" max="40" style="width:70px"></span>
+      </div>
+      <p class="hint" id="capSuggest" style="margin:10px 0 0"></p>
+    </div>
+
+    <div id="capSlots" style="margin-top:16px"></div>
+
+    <div class="card pad" style="margin:16px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <div class="hint" id="capCounter">0 pieces</div>
+      <button class="btn terra" id="capMake">✨ Create combinations →</button>
+    </div>
+    <input type="file" id="capCatInput" accept="image/*" multiple style="display:none">
+  </section>
+
+  <!-- OUTFITS -->
+  <section class="panel" id="p-outfits">
+    <h2 class="sec">Outfits</h2>
+    <p class="sub">Your saved looks. Build them over on the <b>Closet</b> tab by tapping pieces; here you set which day of the trip you'll wear each one.</p>
+    <div id="outfitList"></div>
+  </section>
+
+  <!-- SETUP -->
+  <section class="panel" id="p-setup">
+    <h2 class="sec">Setup & deployment</h2>
+    <p class="sub">Demo mode works instantly with sample data saved in your browser. Live mode reads & writes your own Airtable base through a Netlify Function, so your token never touches the browser.</p>
+
+    <div class="card pad">
+      <h3 style="margin-top:0;font-family:Fraunces,serif">Move between your devices</h3>
+      <p class="hint">No account needed. Export a backup file (it includes your trip, closet photos, list, and outfits), drop it in iCloud Drive or AirDrop it, then import it on your iPhone, iPad, or Mac.</p>
+      <div class="row" style="margin-top:12px">
+        <button class="btn sea sm" id="exportBtn">↓ Export backup</button>
+        <button class="btn ghost sm" id="importBtn">↑ Import backup</button>
+        <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+      </div>
+      <p class="hint" id="backupStatus" style="margin-top:10px"></p>
+    </div>
+
+    <div class="card pad">
+      <h3 style="margin-top:0;font-family:Fraunces,serif">Live mode (Airtable + Netlify)</h3>
+      <p class="hint">The frontend calls <code>/.netlify/functions/airtable</code>. Set your token as a Netlify environment variable named <code>AIRTABLE_PAT</code> and your base id below (saved in this browser only).</p>
+      <div class="row" style="margin-top:12px">
+        <div style="flex:2;min-width:220px"><label class="f">Airtable Base ID</label><input type="text" id="cfgBase" placeholder="appXXXXXXXXXXXXXX"></div>
+        <button class="btn sm" id="saveCfg">Save & connect</button>
+      </div>
+      <p class="hint" id="connStatus" style="margin-top:10px"></p>
+
+      <details class="setup" open>
+        <summary>Airtable tables to create</summary>
+        <p class="hint" style="margin:10px 0">Create these three tables in your base. Field names matter — match them exactly.</p>
+        <table class="tbl">
+          <tr><th>Table</th><th>Fields</th></tr>
+          <tr><td><b>Closet</b></td><td><code>Name</code> (text) · <code>Category</code> (single select) · <code>Color</code> (text) · <code>Warmth</code> (number 1–5) · <code>Tags</code> (multi-select) · <code>Photo</code> (attachment)</td></tr>
+          <tr><td><b>Trips</b></td><td><code>Name</code> (text) · <code>StartDate</code> (date) · <code>Destinations</code> (long text / JSON)</td></tr>
+          <tr><td><b>Packing</b></td><td><code>Trip</code> (link to Trips) · <code>Text</code> (text) · <code>Category</code> (text) · <code>Qty</code> (number) · <code>Packed</code> (checkbox) · <code>Reason</code> (text)</td></tr>
+        </table>
+      </details>
+      <details class="setup">
+        <summary>Netlify Function (airtable.js) & deploy</summary>
+        <p class="hint" style="margin:10px 0">Drop the included <code>netlify/functions/airtable.js</code> and <code>netlify.toml</code> next to this file, add the <code>AIRTABLE_PAT</code> env var in Netlify, and deploy. The function proxies all reads/writes so the token stays server-side.</p>
+      </details>
+    </div>
+
+    <div class="card pad" style="margin-top:16px">
+      <h3 style="margin-top:0;font-family:Fraunces,serif">Reset</h3>
+      <p class="hint">Clears the demo data saved in this browser and reloads the sample trip.</p>
+      <button class="btn ghost sm" id="resetBtn" style="margin-top:8px">Reset demo data</button>
+    </div>
+  </section>
+</div>
+
+<!-- Item modal -->
+<div class="scrim" id="scrim">
+  <div class="modal">
+    <div class="mh"><span id="modalTitle">Add closet item</span><button class="x" id="closeModal">×</button></div>
+    <div class="mb">
+      <div class="grid">
+        <div><label class="f">Name</label><input type="text" id="mName" placeholder="e.g. Linen shirt"></div>
+        <div class="row">
+          <div style="flex:1"><label class="f">Category</label>
+            <select id="mCat"><option>Top</option><option>Bottom</option><option>Dress</option><option>Outerwear</option><option>Footwear</option><option>Swim</option><option>Accessory</option><option>Activewear</option></select>
+          </div>
+          <div style="flex:1"><label class="f">Warmth 1–5</label>
+            <select id="mWarm"><option value="1">1 · Summer</option><option value="2">2 · Mild</option><option value="3" selected>3 · Cool</option><option value="4">4 · Cold</option><option value="5">5 · Arctic</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1"><label class="f">Color</label><input type="text" id="mColor" placeholder="e.g. navy"></div>
+          <div style="flex:1"><label class="f">Emoji (demo)</label><input type="text" id="mEmoji" placeholder="👕" maxlength="2"></div>
+        </div>
+        <div><label class="f">Photo</label><input type="file" id="mPhoto" accept="image/*"><img id="mPreview" alt="" style="display:none;margin-top:10px;width:120px;height:120px;object-fit:cover;border-radius:11px;border:1px solid var(--line)"></div>
+        <button class="btn terra" id="mSave">Save item</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="pickScrim">
+  <div class="modal" style="max-width:560px">
+    <div class="mh"><span id="pickTitle">Pack from closet</span><button class="x" id="pickClose">×</button></div>
+    <div class="mb">
+      <p class="hint" style="margin:0 0 14px">Tap the pieces you're bringing for this. The line ticks off once you've added enough.</p>
+      <div class="closet" id="pickGrid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- tiny helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const uid=()=>Math.random().toString(36).slice(2,9);
+const fmt=d=>new Date(d).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+let units=localStorage.getItem('packwise_units')||'F';
+const c2f=c=>c*9/5+32;
+const tVal=c=>Math.round(units==='F'?c2f(c):c);
+const tUnit=()=>units==='F'?'°F':'°C';
+const iso=d=>d.toISOString().slice(0,10);
+let toastTimer;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('on'),2200);}
+
+/* ---------- activities catalog ---------- */
+const ACTIVITIES=[
+  {id:'beach',em:'🏖️',label:'Beach / swim'},
+  {id:'hiking',em:'🥾',label:'Hiking'},
+  {id:'city',em:'🏛️',label:'City / sightseeing'},
+  {id:'formal',em:'🍷',label:'Nice dinners'},
+  {id:'business',em:'💼',label:'Business attire'},
+  {id:'casualwork',em:'👔',label:'Casual work attire'},
+  {id:'labor',em:'🧰',label:'Manual labor'},
+  {id:'workout',em:'🏋️',label:'Workout'},
+  {id:'water',em:'🚤',label:'Boat / watersports'},
+];
+
+/* ---------- state ---------- */
+let state=load()||seed();
+let mode='demo';
+
+function seed(){
+  const start=iso(addDays(new Date(),14));
+  return {
+    trip:{name:'',start,destinations:[
+      {id:uid(),name:'',days:3,activities:[]},
+    ],laundry:{available:false,intervalDays:4}},
+    closet:demoCloset(),
+    packing:[],
+    outfits:[],
+    selected:[],
+    cfg:{base:''}
+  };
+}
+function demoCloset(){
+  const c=(name,Category,Warmth,Color,em,tags)=>({id:uid(),name,Category,Warmth,Color,emoji:em,tags,photo:null});
+  return [
+    c('Linen shirt','Top',2,'white','👔',['breathable']),
+    c('Striped tee','Top',2,'navy','👕',['casual']),
+    c('Merino sweater','Top',4,'oatmeal','🧶',['layer']),
+    c('Denim shorts','Bottom',1,'blue','🩳',['casual']),
+    c('Linen trousers','Bottom',2,'sand','👖',['smart']),
+    c('Summer dress','Dress',1,'coral','👗',['dressy']),
+    c('Light rain jacket','Outerwear',3,'olive','🧥',['waterproof']),
+    c('Swimsuit','Swim',1,'teal','🩱',['beach']),
+    c('Leather sandals','Footwear',1,'tan','👡',[]),
+    c('White sneakers','Footwear',2,'white','👟',['walk']),
+    c('Sun hat','Accessory',1,'straw','👒',['sun']),
+    c('Sunglasses','Accessory',1,'black','🕶️',['sun']),
+  ];
+}
+
+function save(){if(mode==='demo'){try{localStorage.setItem('packwise',JSON.stringify(state));}catch(e){toast('Storage full — export a backup (Setup) or deploy to keep adding photos');}}}
+function load(){try{return JSON.parse(localStorage.getItem('packwise'));}catch(e){return null;}}
+
+/* ---------- tabs ---------- */
+$('#tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  $$('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  $$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+b.dataset.tab));
+  if(b.dataset.tab==='capsule'&&typeof renderCapsuleTab==='function')renderCapsuleTab();
+});
+function goTab(t){$$('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));$$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));if(t==='capsule'&&typeof renderCapsuleTab==='function')renderCapsuleTab();}
+
+/* ---------- mode toggle ---------- */
+$('#modeSeg').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  mode=b.dataset.mode;
+  $$('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));
+  if(mode==='airtable'){
+    if(!state.cfg.base){toast('Add your Base ID in Setup first');goTab('setup');}
+    else{await pullAirtable();}
+  }else{state=load()||seed();renderAll();}
+});
+
+/* ---------- TRIP rendering ---------- */
+function renderDestinations(){
+  const list=$('#destList');list.innerHTML='';
+  let cursor=new Date(state.trip.start||new Date());
+  state.trip.destinations.forEach((d,i)=>{
+    const startD=new Date(cursor);
+    const endD=addDays(startD,Math.max(0,d.days-1));
+    cursor=addDays(startD,d.days);
+    const el=document.createElement('div');
+    el.className='card pad';
+    el.innerHTML=`
+      <div class="destrow">
+        <div><label class="f">Destination ${i+1}</label><input type="text" data-f="name" placeholder="City, Country"></div>
+        <div><label class="f">Nights</label><input type="number" min="1" data-f="days" value="${d.days}"></div>
+        <div><label class="f">&nbsp;</label><button class="btn ghost sm" data-act="del" title="Remove destination" aria-label="Remove destination">✕ Remove</button></div>
+      </div>
+      <div class="hint" style="margin-top:8px">📅 ${fmt(startD)} – ${fmt(endD)}</div>
+      <div class="chiprow">${ACTIVITIES.map(a=>`<span class="achip ${d.activities.includes(a.id)?'on':''}" data-a="${a.id}"><span class="em">${a.em}</span>${a.label}</span>`).join('')}</div>`;
+    el.querySelector('[data-f="name"]').value=d.name;
+    el.querySelector('[data-f="name"]').addEventListener('input',ev=>{d.name=ev.target.value;save();});
+    const daysIn=el.querySelector('[data-f="days"]');
+    daysIn.addEventListener('input',ev=>{const v=parseInt(ev.target.value,10);if(!isNaN(v))d.days=v;renderTripStats();save();});
+    daysIn.addEventListener('change',ev=>{let v=parseInt(ev.target.value,10);if(isNaN(v)||v<1)v=1;d.days=v;renderDestinations();renderTripStats();save();});
+    el.querySelector('[data-act="del"]').addEventListener('click',()=>{state.trip.destinations.splice(i,1);renderDestinations();renderTripStats();save();});
+    el.querySelectorAll('.achip').forEach(ch=>ch.addEventListener('click',()=>{
+      const a=ch.dataset.a;const ix=d.activities.indexOf(a);
+      if(ix>-1)d.activities.splice(ix,1);else d.activities.push(a);
+      ch.classList.toggle('on');save();
+    }));
+    list.appendChild(el);
+  });
+}
+function renderTripStats(){
+  const days=state.trip.destinations.reduce((s,d)=>s+(+d.days||0),0);
+  const stops=state.trip.destinations.length;
+  const acts=new Set();state.trip.destinations.forEach(d=>d.activities.forEach(a=>acts.add(a)));
+  const end=addDays(new Date(state.trip.start||new Date()),Math.max(0,days-1));
+  $('#tripStats').innerHTML=`
+    <div class="s"><b>${stops}</b>stops</div>
+    <div class="s"><b>${days}</b>nights</div>
+    <div class="s"><b>${acts.size}</b>activity types</div>
+    <div class="s"><b>${state.trip.start?fmt(end):'—'}</b>returns</div>`;
+  updateLaundryUI();
+}
+function updateLaundryUI(writeInput){
+  if(!state.trip.laundry)state.trip.laundry={available:false,intervalDays:4};
+  const L=state.trip.laundry;
+  $$('#laundrySeg button').forEach(b=>b.classList.toggle('on',(b.dataset.l==='on')===L.available));
+  $('#laundryFreq').style.display=L.available?'flex':'none';
+  if(writeInput!==false)$('#laundryInterval').value=L.intervalDays||4;
+  const totalDays=state.trip.destinations.reduce((s,d)=>s+(+d.days||0),0)||1;
+  if(L.available){
+    const baseN=Math.min(totalDays,(+L.intervalDays||4)+2);
+    $('#laundryNote').textContent=`Compacting the repeatables to about ${baseN} of each — enough to wash and re-wear over ${totalDays} nights.`;
+  }else{
+    $('#laundryNote').textContent=`Packing full quantities for all ${totalDays} nights — no washing assumed.`;
+  }
+}
+function maybeRebuild(){if((state.packing||[]).length)generatePacking();renderCapsule();}
+$('#laundrySeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.trip.laundry.available=(b.dataset.l==='on');updateLaundryUI();save();maybeRebuild();});
+$('#laundryInterval').addEventListener('input',e=>{const v=parseInt(e.target.value,10);if(!isNaN(v))state.trip.laundry.intervalDays=v;updateLaundryUI(false);save();});
+$('#laundryInterval').addEventListener('change',e=>{let v=parseInt(e.target.value,10);if(isNaN(v))v=4;v=Math.max(1,Math.min(21,v));state.trip.laundry.intervalDays=v;updateLaundryUI(true);save();maybeRebuild();});
+$('#tripName').addEventListener('input',e=>{state.trip.name=e.target.value;save();});
+$('#tripStart').addEventListener('input',e=>{state.trip.start=e.target.value;renderDestinations();renderTripStats();save();});
+$('#addDest').addEventListener('click',()=>{state.trip.destinations.push({id:uid(),name:'',days:2,activities:[]});renderDestinations();renderTripStats();save();});
+
+/* ---------- WEATHER ---------- */
+async function geocode(name){
+  try{
+    const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`);
+    if(!r.ok)return null;
+    const j=await r.json();
+    if(!j.results||!j.results.length)return null;
+    const g=j.results[0];
+    return {lat:g.latitude,lng:g.longitude,label:[g.name,g.country_code].filter(Boolean).join(', ')};
+  }catch(e){return null;}
+}
+const WMO={0:['☀️','Clear'],1:['🌤️','Mostly clear'],2:['⛅','Partly cloudy'],3:['☁️','Overcast'],
+45:['🌫️','Fog'],48:['🌫️','Fog'],51:['🌦️','Light drizzle'],53:['🌦️','Drizzle'],55:['🌧️','Heavy drizzle'],
+61:['🌧️','Light rain'],63:['🌧️','Rain'],65:['🌧️','Heavy rain'],71:['🌨️','Light snow'],73:['🌨️','Snow'],75:['❄️','Heavy snow'],
+80:['🌦️','Showers'],81:['🌦️','Showers'],82:['⛈️','Heavy showers'],95:['⛈️','Thunderstorm'],96:['⛈️','Thunderstorm'],99:['⛈️','Thunderstorm']};
+function wmo(c){return WMO[c]||['🌡️','—'];}
+
+async function fetchWeather(d,startD,endD){
+  const g=await geocode(d.name);
+  if(!g)return {error:true,label:d.name};
+  const today=new Date();today.setHours(0,0,0,0);
+  const daysOut=Math.round((endD-today)/864e5);
+  let url,source;
+  if(daysOut<=16 && startD>=today){
+    source='forecast';
+    url=`https://api.open-meteo.com/v1/forecast?latitude=${g.lat}&longitude=${g.lng}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode,wind_speed_10m_max&timezone=auto&start_date=${iso(startD)}&end_date=${iso(endD)}`;
+  }else{
+    source='typical';
+    const ly=s=>{const x=new Date(s);x.setFullYear(x.getFullYear()-1);return iso(x);};
+    url=`https://archive-api.open-meteo.com/v1/archive?latitude=${g.lat}&longitude=${g.lng}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode,wind_speed_10m_max&timezone=auto&start_date=${ly(startD)}&end_date=${ly(endD)}`;
+  }
+  try{
+    const j=await(await fetch(url)).json();
+    const dd=j.daily;if(!dd||!dd.time)return {error:true,label:g.label};
+    const maxA=(dd.temperature_2m_max||[]).filter(n=>n!=null);
+    const minA=(dd.temperature_2m_min||[]).filter(n=>n!=null);
+    if(!maxA.length||!minA.length)return {error:true,label:g.label};
+    const max=Math.max(...maxA);
+    const min=Math.min(...minA);
+    const codes=(dd.weathercode||[]).filter(n=>n!=null);
+    const domCode=codes.length?codes.sort((a,b)=>codes.filter(v=>v===a).length-codes.filter(v=>v===b).length).pop():0;
+    let rainChance;
+    if(source==='forecast'){rainChance=Math.max(...(dd.precipitation_probability_max||[0]).map(n=>n||0));}
+    else{const wet=(dd.precipitation_sum||[]).filter(n=>n>1).length;rainChance=Math.round(100*wet/dd.time.length);}
+    const wind=Math.max(...(dd.wind_speed_10m_max||[0]).map(n=>n||0));
+    return {label:g.label,source,max:Math.round(max),min:Math.round(min),rainChance:Math.round(rainChance),wind:Math.round(wind),code:domCode};
+  }catch(e){return {error:true,label:g.label};}
+}
+
+function wcardGradient(w){
+  if(w.error)return 'linear-gradient(135deg,#8a8174,#5e564b)';
+  if(w.code>=71&&w.code<=75)return 'linear-gradient(135deg,#7d93a6,#54677a)';
+  if(w.rainChance>=55||(w.code>=51&&w.code<=82))return 'linear-gradient(135deg,#4a6b78,#2f4a55)';
+  if(w.max>=26)return 'linear-gradient(135deg,#e08a3c,#c75b39)';
+  if(w.max>=18)return 'linear-gradient(135deg,#4f9a86,#2f6f6b)';
+  return 'linear-gradient(135deg,#5a7d8f,#3a5666)';
+}
+
+function wcardInnerHTML(w){
+  if(w.error){
+    return `<div><div class="place">${w.destName||w.label||''}</div><div class="dates">${fmt(w.startD)} – ${fmt(w.endD)}</div></div><div class="cond">No forecast right now — packing by season instead. Check the spelling or your connection.</div>`;
+  }
+  const [ic,desc]=wmo(w.code);
+  return `
+    <span class="srcbadge">${w.source==='forecast'?'Live forecast':'Typical for season'}</span>
+    <div><div class="place">${w.label}</div><div class="dates">${fmt(w.startD)} – ${fmt(w.endD)}</div></div>
+    <div>
+      <div style="display:flex;align-items:center;gap:10px"><span class="wicon">${ic}</span><span class="big">${tVal(w.min)}–${tVal(w.max)}${tUnit()}</span></div>
+      <div class="cond">${desc}</div>
+      <div class="meta"><span>💧 ${w.rainChance}% rain</span><span>💨 ${w.wind} km/h</span></div>
+    </div>`;
+}
+function renderWeatherCards(){
+  const wrap=$('#wcards');if(!wrap)return;wrap.innerHTML='';
+  (state.trip._weather||[]).forEach(w=>{
+    const card=document.createElement('div');card.className='wcard';
+    card.style.background=wcardGradient(w);card.innerHTML=wcardInnerHTML(w);
+    wrap.appendChild(card);
+  });
+}
+function syncUnitSeg(){$$('#unitSeg button').forEach(b=>b.classList.toggle('on',b.dataset.u===units));}
+$('#unitSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;units=b.dataset.u;localStorage.setItem('packwise_units',units);syncUnitSeg();renderWeatherCards();maybeRebuild();});
+
+async function buildForecast(){
+  if(!state.trip.start){toast('Pick a start date first');goTab('trip');return;}
+  goTab('weather');
+  const wrap=$('#wcards');wrap.innerHTML='';
+  let cursor=new Date(state.trip.start);
+  state.trip._weather=[];
+  for(const d of state.trip.destinations){
+    if(!d.name){continue;}
+    const startD=new Date(cursor);const endD=addDays(startD,Math.max(0,d.days-1));cursor=addDays(startD,d.days);
+    const card=document.createElement('div');
+    card.className='wcard';card.style.background='linear-gradient(135deg,#bdb29c,#8a8174)';
+    card.innerHTML=`<div><div class="place">${d.name}</div><div class="dates">Fetching…</div></div><div class="big">…</div>`;
+    wrap.appendChild(card);
+    let w;
+    try{ w=await fetchWeather(d,startD,endD); }
+    catch(err){ w={error:true,label:d.name}; }
+    if(!w)w={error:true,label:d.name};
+    w.startD=startD;w.endD=endD;w.activities=d.activities;w.destName=d.name;
+    state.trip._weather.push(w);
+    card.style.background=wcardGradient(w);
+    card.innerHTML=wcardInnerHTML(w);
+  }
+  try{ generatePacking(); renderCloset(); }catch(err){ console.error(err); }
+  const anyOk=(state.trip._weather||[]).some(w=>!w.error);
+  toast(anyOk?'Forecast in — list updated':'List built from seasonal defaults');
+}
+
+/* ---------- PACKING ENGINE ---------- */
+function generatePacking(){
+  const W=state.trip._weather||[];
+  const totalDays=state.trip.destinations.reduce((s,d)=>s+(+d.days||0),0)||1;
+  const acts=new Set();state.trip.destinations.forEach(d=>d.activities.forEach(a=>acts.add(a)));
+  const valid=W.filter(w=>!w.error);
+  const minT=valid.length?Math.min(...valid.map(w=>w.min)):15;
+  const maxT=valid.length?Math.max(...valid.map(w=>w.max)):22;
+  const rainStop=valid.find(w=>w.rainChance>=45);
+  const windy=valid.some(w=>w.wind>=35);
+  const cold=valid.find(w=>w.min<=8);
+  const hot=valid.find(w=>w.max>=26);
+
+  // preserve manual + packed + closet assignments
+  const prev={};(state.packing||[]).forEach(p=>{prev[p.text.toLowerCase()]={packed:p.packed,manual:p.manual,assigned:p.assigned||[]};});
+  const items=[];
+  const add=(text,category,qty,reason,match)=>{
+    const k=text.toLowerCase();
+    items.push({id:uid(),text,category,qty:qty||null,reason:reason||null,
+      packed:prev[k]?prev[k].packed:false,manual:false,
+      match:match||null,assigned:prev[k]?prev[k].assigned:[]});
+  };
+  // keep manual items
+  (state.packing||[]).filter(p=>p.manual).forEach(p=>items.push(p));
+
+  const laundryAvail=!!(state.trip.laundry&&state.trip.laundry.available);
+  const interval=Math.max(2,+(state.trip.laundry&&state.trip.laundry.intervalDays)||4);
+  const baseN=laundryAvail?Math.min(totalDays,interval+2):totalDays;
+  const washNote=laundryAvail?`wash ~every ${interval}d`:null;
+
+  // Clothing quantities
+  add(`Tops / t-shirts`,'Clothing',Math.max(3,Math.ceil(baseN*0.8)),washNote,{cats:['Top']});
+  add(`Underwear`,'Clothing',baseN,washNote);
+  add(`Socks`,'Clothing',cold?baseN:Math.max(2,Math.ceil(baseN*0.7)),washNote);
+  if(maxT>=20)add(`Bottoms (light)`,'Clothing',Math.max(2,Math.ceil(baseN/3)),null,{cats:['Bottom']});
+  if(minT<18)add(`Bottoms (long)`,'Clothing',Math.max(1,Math.ceil(baseN/4)),minT<10?`cool — down to ${tVal(minT)}${tUnit()}`:null,{cats:['Bottom']});
+  add(`Sleepwear`,'Clothing',(totalDays>7&&!laundryAvail)?2:1,null);
+
+  // Layers / outerwear by temperature
+  if(minT<=0){add('Heavy winter coat','Layers & outerwear',1,`freezing — ${tVal(minT)}${tUnit()}`,{cats:['Outerwear']});add('Thermal base layers','Layers & outerwear',2,null,{cats:['Top']});add('Gloves, hat & scarf','Layers & outerwear',1,null,{cats:['Accessory']});}
+  else if(minT<=8){add('Warm jacket','Layers & outerwear',1,`cold — ${tVal(minT)}${tUnit()} low`,{cats:['Outerwear']});add('Sweater / fleece','Layers & outerwear',2,null,{cats:['Top','Outerwear']});add('Beanie','Layers & outerwear',1,null,{cats:['Accessory']});}
+  else if(minT<=15){add('Light jacket or cardigan','Layers & outerwear',1,`cool evenings — ${tVal(minT)}${tUnit()}`,{cats:['Outerwear','Top']});add('Sweater','Layers & outerwear',1,null,{cats:['Top','Outerwear']});}
+  else if(minT<=19){add('Light layer for evenings','Layers & outerwear',1,`mild evenings — ${tVal(minT)}${tUnit()}`,{cats:['Outerwear','Top']});}
+  if(windy)add('Windbreaker','Layers & outerwear',1,'gusty — 35+ km/h',{cats:['Outerwear']});
+
+  // Rain
+  if(rainStop){add('Packable rain jacket','Layers & outerwear',1,`${rainStop.rainChance}% rain in ${rainStop.destName.split(',')[0]}`,{cats:['Outerwear']});add('Compact umbrella','Essentials',1,null);}
+
+  // Footwear
+  add('Comfortable walking shoes','Footwear',1,null,{cats:['Footwear']});
+  if(hot)add('Sandals','Footwear',1,`warm — up to ${tVal(hot.max)}${tUnit()}`,{cats:['Footwear']});
+  if(acts.has('hiking'))add('Hiking boots','Footwear',1,'hiking',{cats:['Footwear']});
+  if(acts.has('formal'))add('Dressier shoes','Footwear',1,'nice dinners',{cats:['Footwear']});
+  if(rainStop)add('Water-resistant shoes','Footwear',1,'rain expected',{cats:['Footwear']});
+
+  // Activity gear
+  if(acts.has('beach')||acts.has('water')){add('Swimsuit','Clothing',hot?2:1,'beach/swim',{cats:['Swim']});add('Beach towel / sarong','Activity gear',1,null);add('Reef-safe sunscreen','Toiletries',1,null);add('Flip-flops','Footwear',1,null,{cats:['Footwear']});}
+  if(acts.has('hiking')){add('Daypack','Activity gear',1,'hiking');add('Refillable water bottle','Activity gear',1,null);add('Blister plasters','Toiletries',1,null);}
+  if(acts.has('formal')){add('1–2 dressy outfits','Clothing',null,'nice dinners',{cats:['Dress','Top','Bottom']});}
+  if(acts.has('business')){
+    add('Business attire (2–3 sets)','Clothing',null,'business',{cats:['Dress','Top','Bottom','Outerwear']});
+    if(!acts.has('formal'))add('Dress shoes','Footwear',1,'business',{cats:['Footwear']});
+    add('Belt','Accessory',1,null,{cats:['Accessory']});
+    add('Laptop & charger','Tech',1,null);
+    add('Notebook & pen','Tech',1,null);
+  }
+  if(acts.has('casualwork')){
+    add('Casual work shirts / polos','Clothing',Math.max(2,Math.ceil(baseN*0.5)),'smart casual',{cats:['Top']});
+    add('Chinos / casual trousers','Clothing',Math.max(1,Math.ceil(baseN/3)),'smart casual',{cats:['Bottom']});
+    add('Comfortable closed shoes','Footwear',1,'smart casual',{cats:['Footwear']});
+  }
+  if(acts.has('labor')){
+    add('Work trousers (durable)','Clothing',Math.max(2,Math.ceil(baseN/3)),'gets dirty',{cats:['Bottom']});
+    add('Old t-shirts for work','Clothing',Math.max(2,Math.ceil(baseN*0.5)),'gets dirty',{cats:['Top']});
+    add('Work gloves','Activity gear',1,'manual labor');
+    add('Sturdy closed-toe boots','Footwear',1,'manual labor',{cats:['Footwear']});
+    add('Cap or bandana','Accessory',1,null,{cats:['Accessory']});
+  }
+  if(acts.has('workout')){add('Workout clothes','Activewear',2,null,{cats:['Activewear']});add('Trainers','Footwear',1,null,{cats:['Footwear']});}
+  if(hot){add('Sun hat','Accessory',1,`hot — ${tVal(hot.max)}${tUnit()}`,{cats:['Accessory']});add('Sunglasses','Accessory',1,null,{cats:['Accessory']});add('After-sun / aloe','Toiletries',1,null);}
+
+  // Essentials & docs (always)
+  ['Passport / ID','Boarding passes','Travel insurance card','Cash + cards','Reservations (hotel/transport)'].forEach(t=>add(t,'Documents',1,null));
+  ['Phone + charger','Power bank','EU plug adapter (Type C/F)','Headphones'].forEach(t=>add(t,'Tech',1,null));
+  ['Toothbrush & paste','Deodorant','Skincare','Any medications','Hairbrush'].forEach(t=>add(t,'Toiletries',1,null));
+  add('Reusable shopping/tote bag','Essentials',1,null);
+  add(laundryAvail?'Laundry bag + travel detergent':'Dirty-laundry bag','Essentials',1,laundryAvail?'for washing':(totalDays>7?'long trip':null));
+
+  state.packing=items;
+  renderPacking();save();
+  if(mode==='airtable')syncPackingToAirtable();
+}
+
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+function capsulePlan(){
+  const total=state.trip.destinations.reduce((s,d)=>s+(+d.days||0),0)||1;
+  const L=state.trip.laundry||{};
+  const avail=!!L.available;
+  const interval=clamp(+L.intervalDays||4,1,21);
+  const wnd=avail?Math.min(total,interval+2):total;
+  const tops=clamp(wnd-2,3,7);
+  const bottoms=clamp(Math.round(wnd/3)+1,2,4);
+  const layers=2,shoes=2;
+  const base=tops*bottoms;
+  return {total,avail,interval,wnd,tops,bottoms,layers,shoes,base};
+}
+function countCat(cats){return (state.closet||[]).filter(i=>cats.includes(i.Category)).length;}
+function renderCapsule(){
+  const box=$('#capsuleCard');if(!box)return;
+  const c=capsulePlan();
+  const lead=c.avail
+    ? `Washing every <b>${c.interval} days</b> means you pack about <b>${c.wnd} days</b> of clothes for the whole <b>${c.total}-day</b> trip — then re-wash. Bring this much:`
+    : `For <b>${c.total} days</b> with no laundry, bring this much (turn on laundry in the Trip tab to pack less):`;
+  const have={tops:countCat(['Top']),bottoms:countCat(['Bottom']),layers:countCat(['Outerwear']),shoes:countCat(['Footwear'])};
+  const tile=(num,lbl,h)=>{
+    const ok=h>=num;
+    const hv=`<div class="have ${ok?'ok':'need'}">${ok?`✓ you have ${h}`:`have ${h} · add ~${num-h}`}</div>`;
+    return `<div class="ctile"><div class="num">${num}</div><div class="lbl">${lbl}</div>${hv}</div>`;
+  };
+  box.innerHTML=`<div class="capsule">
+    <h3>🧳 Your capsule plan</h3>
+    <p class="lead">${lead}</p>
+    <div class="ctargets">
+      ${tile(c.tops,'tops (tees + a couple nicer)',have.tops)}
+      ${tile(c.bottoms,'bottoms',have.bottoms)}
+      ${tile(c.layers,'layers — button-down / sweater',have.layers)}
+      ${tile(c.shoes,'pairs of shoes',have.shoes)}
+    </div>
+    <p class="foot">That mixes into about <b>${c.base} base outfits</b>, and wearing a button-down open vs. buttoned roughly doubles that — plenty for ~${c.wnd} wearing days. Keep one bottom that goes with every top and you're set.</p>
+  </div>`;
+}
+function lineNeed(p){return p.qty||1;}
+function lineDone(p){return p.match?((p.assigned||[]).length>=lineNeed(p)):!!p.packed;}
+function assignedAnywhere(closetId){return (state.packing||[]).some(p=>(p.assigned||[]).includes(closetId));}
+function closetById(id){return (state.closet||[]).find(c=>c.id===id);}
+function thumbHTML(it){return it.photo?`<img src="${it.photo}" alt="">`:`<span>${it.emoji||'👕'}</span>`;}
+
+function renderPacking(){
+  renderCapsule();
+  const order=['Essentials','Documents','Clothing','Layers & outerwear','Footwear','Accessory','Activewear','Toiletries','Tech','Activity gear'];
+  const cats={};(state.packing||[]).forEach(p=>{(cats[p.category]=cats[p.category]||[]).push(p);});
+  const wrap=$('#packList');wrap.innerHTML='';
+  if(!state.packing||!state.packing.length){wrap.innerHTML='<div class="empty"><span class="em">🧳</span>No list yet — head to the Trip tab and hit “Get forecast & build list”.</div>';updateProgress();return;}
+  order.filter(c=>cats[c]).forEach(c=>{
+    const sec=document.createElement('div');sec.className='pcat';
+    sec.innerHTML=`<h3>${c} <span class="n">${cats[c].length}</span></h3>`;
+    cats[c].forEach(p=>{
+      const done=lineDone(p);
+      const row=document.createElement('div');row.className='pitem'+(done?' done':'')+(p.match?' fill':'');
+      const need=lineNeed(p),have=(p.assigned||[]).length;
+      if(p.match){
+        const thumbs=(p.assigned||[]).map(id=>{const it=closetById(id);if(!it)return '';return `<span class="ptag" data-rm="${id}" title="${it.name} — tap to remove">${thumbHTML(it)}</span>`;}).join('');
+        row.innerHTML=`<span class="chk auto ${done?'on':''}" aria-hidden="true">${done?'✓':''}</span>
+          <span class="ptext">${p.text}</span>
+          <span class="pcount">${have}/${need}</span>
+          ${p.reason?`<span class="preason">${p.reason}</span>`:''}
+          <button class="pdel" title="Remove line">×</button>
+          <div class="ptags">${thumbs}<button class="addcloset" title="Add from closet">+ closet</button></div>`;
+        row.querySelector('.addcloset').addEventListener('click',()=>openPicker(p.id));
+        row.querySelectorAll('[data-rm]').forEach(t=>t.addEventListener('click',()=>{p.assigned=p.assigned.filter(x=>x!==t.dataset.rm);renderPacking();renderCloset();save();if(mode==='airtable')syncPackingToAirtable();}));
+      }else{
+        row.innerHTML=`<input type="checkbox" class="chk" ${p.packed?'checked':''}>
+          <span class="ptext">${p.text}</span>
+          ${p.qty?`<span class="pqty">×${p.qty}</span>`:''}
+          ${p.reason?`<span class="preason">${p.reason}</span>`:''}
+          <button class="pdel" title="Remove">×</button>`;
+        row.querySelector('.chk').addEventListener('change',e=>{p.packed=e.target.checked;row.classList.toggle('done',p.packed);updateProgress();save();if(mode==='airtable')syncPackingToAirtable();});
+      }
+      row.querySelector('.pdel').addEventListener('click',()=>{state.packing=state.packing.filter(x=>x!==p);renderPacking();renderCloset();save();});
+      sec.appendChild(row);
+    });
+    wrap.appendChild(sec);
+  });
+  updateProgress();
+}
+function updateProgress(){
+  const list=state.packing||[];const tot=list.length,done=list.filter(lineDone).length;
+  $('#progBar').style.width=tot?(100*done/tot)+'%':'0%';
+  $('#progTxt').textContent=`${done} / ${tot} packed`;
+  $('#ctPack').textContent=tot;
+}
+
+/* closet picker for a packing line */
+let pickerLineId=null;
+function openPicker(lineId){
+  pickerLineId=lineId;
+  const p=(state.packing||[]).find(x=>x.id===lineId);if(!p)return;
+  const cats=p.match.cats||[];
+  let items=(state.closet||[]).filter(it=>cats.includes(it.Category));
+  $('#pickTitle').textContent=`Pack: ${p.text}`;
+  const grid=$('#pickGrid');grid.innerHTML='';
+  if(!items.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><span class="em">👀</span>No ${cats.join('/').toLowerCase()} in your closet yet. Add some in the Closet tab.</div>`;}
+  items.forEach(it=>{
+    const onThis=(p.assigned||[]).includes(it.id);
+    const elsewhere=!onThis&&assignedAnywhere(it.id);
+    const el=document.createElement('div');el.className='item'+(onThis?' sel':'')+(elsewhere?' used':'');
+    el.innerHTML=`<div class="pick">✓</div>${elsewhere?'<span class="usedbadge">packed</span>':''}
+      <div class="img">${thumbHTML(it)}</div>
+      <div class="cap"><div class="nm">${it.name}</div><div class="tg">${it.Category}${it.Color?' · '+it.Color:''}</div></div>`;
+    el.addEventListener('click',()=>{
+      if(elsewhere){toast('Already packed on another line');return;}
+      p.assigned=p.assigned||[];
+      const ix=p.assigned.indexOf(it.id);
+      if(ix>-1)p.assigned.splice(ix,1);else p.assigned.push(it.id);
+      openPicker(lineId);renderPacking();renderCloset();save();if(mode==='airtable')syncPackingToAirtable();
+    });
+    grid.appendChild(el);
+  });
+  $('#pickScrim').classList.add('on');
+}
+$('#pickClose').addEventListener('click',()=>$('#pickScrim').classList.remove('on'));
+$('#pickScrim').addEventListener('click',e=>{if(e.target===$('#pickScrim'))$('#pickScrim').classList.remove('on');});
+$('#addItemBtn').addEventListener('click',()=>{
+  const t=$('#newItem').value.trim();if(!t)return;
+  state.packing.push({id:uid(),text:t,category:$('#newCat').value,qty:null,reason:null,packed:false,manual:true});
+  $('#newItem').value='';renderPacking();save();
+});
+$('#newItem').addEventListener('keydown',e=>{if(e.key==='Enter')$('#addItemBtn').click();});
+
+/* ---------- CLOSET ---------- */
+function warmthFitForTrip(item){
+  const W=(state.trip._weather||[]).filter(w=>!w.error);
+  if(!W.length)return true;
+  const minT=Math.min(...W.map(w=>w.min)),maxT=Math.max(...W.map(w=>w.max));
+  // map warmth 1..5 to comfortable temp band
+  const bands={1:[20,45],2:[14,30],3:[6,22],4:[-2,14],5:[-30,6]};
+  const [lo,hi]=bands[item.Warmth||3];
+  return !(hi<minT-3 || lo>maxT+3);
+}
+function renderCloset(){
+  const grid=$('#closetGrid');grid.innerHTML='';
+  const fcat=$('#closetFilter').value;
+  const fit=$('#weatherFit').checked;
+  let items=state.closet||[];
+  if(fcat!=='all')items=items.filter(i=>i.Category===fcat);
+  if(fit)items=items.filter(warmthFitForTrip);
+  $('#ctCloset').textContent=(state.closet||[]).length;
+  if(!items.length){grid.innerHTML='<div class="empty"><span class="em">👚</span>Nothing here yet. Add your clothes with “+ Add closet item”.</div>';return;}
+  items.forEach(it=>{
+    const sel=state.selected.includes(it.id);
+    const packed=assignedAnywhere(it.id);
+    const el=document.createElement('div');el.className='item'+(sel?' sel':'');
+    const ph=it.photo?`<img src="${it.photo}" alt="">`:(it.emoji||'👕');
+    el.innerHTML=`<button class="itemdel" title="Delete item" aria-label="Delete ${it.name}">✕</button>
+      <button class="itemedit" title="Edit item" aria-label="Edit ${it.name}">✎</button>
+      <span class="warm">🌡 ${it.Warmth||3}</span>
+      <div class="img">${ph}</div>
+      <div class="cap"><div class="nm">${it.name}</div><div class="tg">${it.Category}${it.Color?' · '+it.Color:''}${packed?' · <b style="color:#1f4f4c">packed</b>':''}</div></div>`;
+    el.querySelector('.itemdel').addEventListener('click',ev=>{ev.stopPropagation();if(confirm(`Delete "${it.name}" from your closet?`))deleteClosetItem(it.id);});
+    el.querySelector('.itemedit').addEventListener('click',ev=>{ev.stopPropagation();openModalForEdit(it);});
+    el.addEventListener('click',()=>{
+      const ix=state.selected.indexOf(it.id);
+      if(ix>-1)state.selected.splice(ix,1);else state.selected.push(it.id);
+      renderCloset();updateSel();
+    });
+    grid.appendChild(el);
+  });
+}
+function deleteClosetItem(id){
+  state.closet=(state.closet||[]).filter(c=>c.id!==id);
+  (state.packing||[]).forEach(p=>{if(p.assigned)p.assigned=p.assigned.filter(x=>x!==id);});
+  (state.outfits||[]).forEach(o=>{o.itemIds=(o.itemIds||[]).filter(x=>x!==id);});
+  state.outfits=(state.outfits||[]).filter(o=>(o.itemIds||[]).length);
+  state.selected=(state.selected||[]).filter(x=>x!==id);
+  renderCloset();renderPacking();renderOutfits();updateSel();save();
+  if(mode==='airtable'){api({action:'delete',table:'Closet',recordId:id}).catch(()=>{});}
+  toast('Deleted');
+}
+function clearCloset(){
+  if(!(state.closet||[]).length){toast('Closet is already empty');return;}
+  if(mode==='airtable'){toast('In Live mode, delete items in Airtable');return;}
+  if(!confirm('Remove ALL items from your closet? This clears the sample data so you can add your own. (Your trip and list stay.)'))return;
+  state.closet=[];
+  (state.packing||[]).forEach(p=>{if(p.assigned)p.assigned=[];});
+  state.outfits=[];state.selected=[];
+  renderCloset();renderPacking();renderOutfits();updateSel();save();
+  toast('Closet cleared');
+}
+$('#clearClosetBtn').addEventListener('click',clearCloset);
+$('#closetFilter').addEventListener('change',renderCloset);
+$('#weatherFit').addEventListener('change',renderCloset);
+
+/* item modal */
+let pendingPhoto=null;     // compressed dataURL for the item being added
+let photoQueue=[];         // [{dataURL,name}] from dropped/picked files
+let editingId=null;        // id of closet item being edited, or null when adding
+
+function compressImage(file,max=900,q=0.82){
+  return new Promise(res=>{
+    const fr=new FileReader();
+    fr.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width,h=img.height;
+        if(w>max||h>max){const s=max/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        try{res(c.toDataURL('image/jpeg',q));}catch(e){res(fr.result);}
+      };
+      img.onerror=()=>res(fr.result);
+      img.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+function setPreview(dataURL){
+  const p=$('#mPreview');
+  if(dataURL){p.src=dataURL;p.style.display='block';}else{p.removeAttribute('src');p.style.display='none';}
+}
+function openModal(){editingId=null;photoQueue=[];pendingPhoto=null;setPreview(null);$('#modalTitle').textContent='Add closet item';$('#mSave').textContent='Save item';$('#scrim').classList.add('on');}
+function openModalForEdit(it){
+  editingId=it.id;photoQueue=[];pendingPhoto=it.photo||null;
+  $('#mName').value=it.name||'';$('#mCat').value=it.Category||'Top';$('#mWarm').value=String(it.Warmth||3);
+  $('#mColor').value=it.Color||'';$('#mEmoji').value=it.emoji||'';
+  setPreview(it.photo||null);
+  $('#modalTitle').textContent='Edit item';$('#mSave').textContent='Save changes';
+  $('#scrim').classList.add('on');
+}
+function openModalWithPhoto(q){
+  editingId=null;
+  pendingPhoto=q.dataURL;
+  $('#mName').value=q.name||'';
+  $('#mColor').value='';$('#mEmoji').value='';$('#mCat').value='Top';$('#mWarm').value='3';
+  setPreview(q.dataURL);
+  $('#modalTitle').textContent='Add closet item';$('#mSave').textContent='Save item';
+  $('#scrim').classList.add('on');
+}
+function closeModal(){$('#scrim').classList.remove('on');['mName','mColor','mEmoji'].forEach(i=>$('#'+i).value='');$('#mPhoto').value='';pendingPhoto=null;photoQueue=[];editingId=null;setPreview(null);}
+$('#addItemModalBtn').addEventListener('click',openModal);
+$('#closeModal').addEventListener('click',closeModal);
+$('#scrim').addEventListener('click',e=>{if(e.target===$('#scrim'))closeModal();});
+$('#mPhoto').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;pendingPhoto=await compressImage(f);setPreview(pendingPhoto);});
+
+$('#mSave').addEventListener('click',async()=>{
+  const name=$('#mName').value.trim();if(!name){toast('Give it a name');return;}
+  const fields={name,Category:$('#mCat').value,Warmth:+$('#mWarm').value,Color:$('#mColor').value.trim(),emoji:$('#mEmoji').value.trim()||null};
+  if(editingId){
+    const it=(state.closet||[]).find(c=>c.id===editingId);
+    if(it){
+      const photoChanged=(pendingPhoto||null)!==(it.photo||null);
+      Object.assign(it,fields,{photo:pendingPhoto||null});
+      if(mode==='airtable')await updateClosetAirtable(it,photoChanged?pendingPhoto:null);
+    }
+    renderCloset();renderPacking();renderOutfits();save();closeModal();toast('Changes saved');
+    return;
+  }
+  const item={id:uid(),...fields,tags:[],photo:pendingPhoto||null};
+  state.closet.push(item);
+  if(mode==='airtable')await createClosetAirtable(item,pendingPhoto);
+  renderCloset();save();
+  photoQueue.shift();
+  if(photoQueue.length){pendingPhoto=null;$('#mPhoto').value='';openModalWithPhoto(photoQueue[0]);toast('Saved — next photo');}
+  else{closeModal();toast('Added to closet');}
+});
+
+/* drag & drop / tap-to-pick photos — add them all, then edit with the pencil */
+function guessCategory(name){
+  const n=(name||'').toLowerCase();
+  if(/(sandal|boot|shoe|sneaker|trainer|heel|flip|loafer)/.test(n))return 'Footwear';
+  if(/(dress|gown)/.test(n))return 'Dress';
+  if(/(jacket|coat|sweater|cardigan|fleece|hoodie|blazer|parka)/.test(n))return 'Outerwear';
+  if(/(swim|bikini|trunks|suit\b)/.test(n))return 'Swim';
+  if(/(hat|cap|sunglass|belt|scarf|bag|glove|jewel|watch)/.test(n))return 'Accessory';
+  if(/(short|pant|trouser|jean|skirt|legging|chino)/.test(n))return 'Bottom';
+  if(/(gym|workout|active|sport|run)/.test(n))return 'Activewear';
+  return 'Top';
+}
+async function handlePhotoFiles(files,forcedCat){
+  const imgs=[...files].filter(f=>f.type&&f.type.startsWith('image/'));
+  if(!imgs.length){toast('Drop image files (jpg, png…)');return;}
+  let added=0;
+  for(const f of imgs){
+    const dataURL=await compressImage(f);
+    const base=(f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ').trim().slice(0,40));
+    const name=base||(forcedCat?forcedCat+' item':'New item');
+    const cat=forcedCat||guessCategory(f.name);
+    const item={id:uid(),name,Category:cat,Warmth:3,Color:'',emoji:null,tags:[],photo:dataURL};
+    state.closet.push(item);
+    if(forcedCat)state.selected.push(item.id);
+    if(mode==='airtable')await createClosetAirtable(item,dataURL);
+    added++;
+    renderCloset();
+  }
+  save();updateSel();
+  toast(added===1?'Photo added':`Added ${added} photos`);
+  if(typeof renderCapsuleTab==='function')renderCapsuleTab();
+}
+(function setupDropzone(){
+  const dz=$('#dropZone');if(!dz)return;
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();dz.classList.add('over');}));
+  ['dragleave','dragend'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('over');}));
+  dz.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();dz.classList.remove('over');handlePhotoFiles(e.dataTransfer&&e.dataTransfer.files?e.dataTransfer.files:[]);});
+  dz.addEventListener('click',()=>$('#dropInput').click());
+  $('#dropInput').addEventListener('change',e=>{handlePhotoFiles(e.target.files);e.target.value='';});
+  // also accept drops anywhere on the closet grid
+  const grid=$('#closetGrid');
+  if(grid){
+    ['dragenter','dragover'].forEach(ev=>grid.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over');}));
+    grid.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handlePhotoFiles(e.dataTransfer&&e.dataTransfer.files?e.dataTransfer.files:[]);});
+  }
+  // capsule-tab dropzone
+  const cd=$('#capDrop');
+  if(cd){
+    ['dragenter','dragover'].forEach(ev=>cd.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();cd.classList.add('over');}));
+    ['dragleave','dragend'].forEach(ev=>cd.addEventListener(ev,e=>{e.preventDefault();cd.classList.remove('over');}));
+    cd.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();cd.classList.remove('over');handlePhotoFiles(e.dataTransfer&&e.dataTransfer.files?e.dataTransfer.files:[]);});
+    cd.addEventListener('click',()=>$('#capDropInput').click());
+    const cdi=$('#capDropInput');if(cdi)cdi.addEventListener('change',e=>{handlePhotoFiles(e.target.files);e.target.value='';});
+  }
+})();
+
+/* ---------- OUTFITS ---------- */
+function updateSel(){
+  const n=state.selected.length;
+  const lab=$('#obLabel');if(lab)lab.textContent=n>0?`${n} piece(s) selected — save as one outfit, or auto-make every combo`:'Tap the pieces you want to bring — then save one outfit, or auto-make every combo';
+  const b=$('#outfitBuilder');if(b)b.style.display='block';
+  $('#ctOut').textContent=(state.outfits||[]).length;
+}
+function dayOptionsHTML(sel){
+  const total=state.trip.destinations.reduce((s,d)=>s+(+d.days||0),0);
+  let cursor=new Date(state.trip.start||new Date());
+  let html=`<option value="">No day set</option>`;
+  for(let i=0;i<total;i++){const d=addDays(cursor,i);html+=`<option value="${i}" ${sel===i?'selected':''}>Day ${i+1} · ${fmt(d)}</option>`;}
+  return html;
+}
+$('#saveOutfit').addEventListener('click',()=>{
+  if(!state.selected.length){toast('Tap pieces in your closet first');return;}
+  const name=$('#outfitName').value.trim()||'Untitled look';
+  state.outfits.push({id:uid(),name,day:null,itemIds:[...state.selected]});
+  state.selected=[];$('#outfitName').value='';
+  renderCloset();renderOutfits();updateSel();save();
+  toast('Outfit saved — set its day on the Outfits tab');
+});
+$('#clearSel').addEventListener('click',()=>{state.selected=[];$('#outfitName').value='';renderCloset();updateSel();});
+function autoMakeOutfits(){
+  const sel=state.selected.map(closetById).filter(Boolean);
+  const tops=sel.filter(i=>i.Category==='Top');
+  const bottoms=sel.filter(i=>i.Category==='Bottom');
+  const dresses=sel.filter(i=>i.Category==='Dress');
+  const shoes=sel.filter(i=>i.Category==='Footwear');
+  // every outfit must be complete: a shirt + a bottom + shoes (dresses replace shirt+bottom)
+  const missing=[];
+  const haveBase=tops.length&&bottoms.length;
+  if(!haveBase&&!dresses.length)missing.push('a shirt and a bottom (or a dress)');
+  else if(!haveBase&&dresses.length){/* dresses ok */}
+  if(!shoes.length)missing.push('shoes');
+  if((!haveBase&&!dresses.length)||!shoes.length){
+    toast('Each outfit needs a shirt + bottom + shoes. Also select: '+missing.join(' and '));
+    return;
+  }
+  const combos=[];let si=0;
+  for(const b of bottoms){for(const t of tops){
+    const ids=[t.id,b.id,shoes[si%shoes.length].id];si++;
+    combos.push({name:`${t.name} + ${b.name}`,itemIds:ids});
+  }}
+  for(const d of dresses){
+    combos.push({name:d.name,itemIds:[d.id,shoes[si%shoes.length].id]});si++;
+  }
+  if(!combos.length){toast('Select a shirt, a bottom, and shoes');return;}
+  const made=combos.slice(0,24);
+  made.forEach(o=>state.outfits.push({id:uid(),name:o.name,day:null,itemIds:o.itemIds}));
+  state.selected=[];$('#outfitName').value='';
+  renderCloset();renderOutfits();updateSel();save();goTab('outfits');
+  toast(`Made ${made.length} outfit${made.length>1?'s':''} — keep the ones you like`);
+}
+$('#autoOutfits').addEventListener('click',autoMakeOutfits);
+
+/* ---------- CAPSULE TAB ---------- */
+let capTarget=parseInt(localStorage.getItem('packwise_captarget'),10);
+function suggestedTarget(){const w=capsulePlan().wnd;return w<=5?9:(w<=8?12:16);}
+function getCapTarget(){return capTarget||suggestedTarget();}
+function setCapTarget(n){capTarget=Math.max(3,Math.min(40,n));localStorage.setItem('packwise_captarget',capTarget);}
+function capsuleSplit(N){
+  const shoes=N>=12?3:2,layers=N>=12?2:1;
+  let rest=Math.max(2,N-shoes-layers);
+  const bottoms=Math.max(2,Math.round(rest*0.4));
+  const tops=Math.max(2,rest-bottoms);
+  return {tops,bottoms,layers,shoes};
+}
+function capsulePreview(){
+  const sel=state.selected.map(closetById).filter(Boolean);
+  const tops=sel.filter(i=>i.Category==='Top').length;
+  const bottoms=sel.filter(i=>i.Category==='Bottom').length;
+  const dresses=sel.filter(i=>i.Category==='Dress').length;
+  const shoes=sel.filter(i=>i.Category==='Footwear').length;
+  const outfits=shoes>0?Math.min(tops*bottoms+dresses,24):0;
+  return {chosen:sel.length,tops,bottoms,dresses,shoes,outfits};
+}
+function renderCapsuleTab(){
+  if(!$('#p-capsule'))return;
+  const plan=capsulePlan();const sug=suggestedTarget();const N=getCapTarget();
+  $('#capSuggestLine').innerHTML=`Your <b>${plan.total}-day</b> trip${plan.avail?` (washing every ${plan.interval} days)`:''} → we suggest <b>${sug} pieces</b>. Adjust below if you like.`;
+  $$('#capCountChips [data-n]').forEach(b=>b.classList.toggle('on',+b.dataset.n===N));
+  const custom=$('#capCustom');if(custom&&document.activeElement!==custom)custom.value=[9,12,16].includes(N)?'':N;
+  const sp=capsuleSplit(N);
+  $('#capSuggest').innerHTML=`A balanced <b>${N}</b>: about <b>${sp.tops} tops</b>, <b>${sp.bottoms} bottoms</b>, <b>${sp.layers} outerwear</b>, <b>${sp.shoes} shoes</b>. Add photos for each below.`;
+  const cats=[['Top','Tops',sp.tops],['Bottom','Bottoms',sp.bottoms],['Outerwear','Outerwear',sp.layers],['Footwear','Shoes',sp.shoes]];
+  const chosen=state.selected.map(closetById).filter(Boolean);
+  const slots=$('#capSlots');slots.innerHTML='';
+  cats.forEach(([cat,label,target])=>{
+    const items=chosen.filter(i=>i.Category===cat);
+    const done=items.length>=target;
+    const thumbs=items.map(it=>{const ph=it.photo?`<img src="${it.photo}">`:(it.emoji||'👕');return `<span class="ptag" data-rm="${it.id}" title="${it.name} — tap to remove">${ph}</span>`;}).join('');
+    const card=document.createElement('div');card.className='card pad';card.style.marginBottom='12px';
+    card.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="font-size:16px;font-weight:600"><span class="ser" style="font-family:Fraunces,serif">${label}</span> <span class="pcount">${items.length} of ${target}${done?' ✓':''}</span></div>
+        <button class="btn sea sm" data-add="${cat}">+ Add ${label.toLowerCase()}</button>
+      </div>
+      <div class="ptags" style="padding-left:0;margin-top:10px">${thumbs||`<span class="hint">No ${label.toLowerCase()} yet — tap “Add ${label.toLowerCase()}” to take or upload photos.</span>`}</div>`;
+    card.querySelector('[data-add]').addEventListener('click',()=>{capAddCategory=cat;$('#capCatInput').click();});
+    card.querySelectorAll('[data-rm]').forEach(t=>t.addEventListener('click',()=>{state.selected=state.selected.filter(x=>x!==t.dataset.rm);renderCapsuleTab();renderCloset();updateSel();save();}));
+    slots.appendChild(card);
+  });
+  const pv=capsulePreview();
+  const ready=pv.tops&&pv.bottoms&&pv.shoes;
+  $('#capCounter').innerHTML=`<b>${pv.chosen} of ${N}</b> pieces added · makes up to <b>${pv.outfits}</b> outfit${pv.outfits===1?'':'s'}`;
+  const btn=$('#capMake');btn.disabled=!ready;btn.style.opacity=ready?'1':'.5';
+}
+let capAddCategory='Top';
+$('#capCatInput').addEventListener('change',e=>{handlePhotoFiles(e.target.files,capAddCategory);e.target.value='';});
+$('#capCountChips').addEventListener('click',e=>{const b=e.target.closest('[data-n]');if(!b)return;setCapTarget(+b.dataset.n);renderCapsuleTab();});
+$('#capCustom').addEventListener('input',e=>{const v=parseInt(e.target.value,10);if(!isNaN(v)){setCapTarget(v);renderCapsuleTab();}});
+$('#capMake').addEventListener('click',autoMakeOutfits);
+function renderOutfits(){
+  const wrap=$('#outfitList');wrap.innerHTML='';
+  if(!state.outfits||!state.outfits.length){wrap.innerHTML='<div class="empty"><span class="em">🧥</span>No looks yet. Go to the <b>Closet</b> tab, tap a few pieces, and save them as an outfit.</div>';updateSel();return;}
+  const sorted=[...state.outfits].sort((a,b)=>(a.day??99)-(b.day??99));
+  sorted.forEach(o=>{
+    const el=document.createElement('div');el.className='outfit';
+    const pieces=o.itemIds.map(id=>{
+      const it=(state.closet||[]).find(c=>c.id===id);if(!it)return '';
+      const ph=it.photo?`<img src="${it.photo}">`:(it.emoji||'👕');
+      return `<div class="piece"><div class="pi">${ph}</div><div class="pn">${it.name}</div></div>`;
+    }).join('');
+    el.innerHTML=`<div class="ohead"><span class="onm">${o.name}</span><span style="display:flex;gap:8px;align-items:center"><select class="oday-sel sm">${dayOptionsHTML(o.day)}</select><button class="x" data-del style="font-size:20px">×</button></span></div><div class="pieces">${pieces||'<span class="hint">Pieces no longer in closet</span>'}</div>`;
+    el.querySelector('.oday-sel').addEventListener('change',e=>{o.day=e.target.value===''?null:+e.target.value;save();renderOutfits();});
+    el.querySelector('[data-del]').addEventListener('click',()=>{state.outfits=state.outfits.filter(x=>x!==o);renderOutfits();save();});
+    wrap.appendChild(el);
+  });
+  updateSel();
+}
+
+/* ---------- AIRTABLE (via Netlify function proxy) ---------- */
+async function api(payload){
+  const r=await fetch('/.netlify/functions/airtable',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base:state.cfg.base,...payload})});
+  if(!r.ok)throw new Error('proxy '+r.status);
+  return r.json();
+}
+async function pullAirtable(){
+  try{
+    const cl=await api({action:'list',table:'Closet'});
+    state.closet=(cl.records||[]).map(r=>({
+      id:r.id,name:r.fields.Name||'Item',Category:r.fields.Category||'Top',
+      Warmth:r.fields.Warmth||3,Color:r.fields.Color||'',tags:r.fields.Tags||[],
+      photo:(r.fields.Photo&&r.fields.Photo[0])?(r.fields.Photo[0].thumbnails?.large?.url||r.fields.Photo[0].url):null,emoji:null
+    }));
+    renderAll();$('#connStatus').textContent=`Connected — ${state.closet.length} closet items loaded.`;
+    toast('Connected to Airtable');
+  }catch(e){$('#connStatus').textContent='Could not reach the Netlify function. Deploy with AIRTABLE_PAT set, or stay in Demo mode.';toast('Live connection failed');}
+}
+async function createClosetAirtable(item,dataURL){
+  try{
+    const res=await api({action:'create',table:'Closet',fields:{Name:item.name,Category:item.Category,Warmth:item.Warmth,Color:item.Color}});
+    if(dataURL&&res.id){
+      const m=dataURL.match(/^data:([^;]+);base64,(.*)$/);
+      if(m){await api({action:'upload',table:'Closet',recordId:res.id,field:'Photo',filename:'photo.'+((m[1].split('/')[1]||'jpg')),contentType:m[1],b64:m[2]});}
+    }
+  }catch(e){toast('Saved locally; Airtable write failed');}
+}
+async function updateClosetAirtable(item,newPhotoDataURL){
+  try{
+    const fields={Name:item.name,Category:item.Category,Warmth:item.Warmth,Color:item.Color};
+    if(newPhotoDataURL!==null)fields.Photo=[]; // clear before re-uploading
+    await api({action:'update',table:'Closet',recordId:item.id,fields});
+    if(newPhotoDataURL){
+      const m=newPhotoDataURL.match(/^data:([^;]+);base64,(.*)$/);
+      if(m){await api({action:'upload',table:'Closet',recordId:item.id,field:'Photo',filename:'photo.'+((m[1].split('/')[1]||'jpg')),contentType:m[1],b64:m[2]});}
+    }
+  }catch(e){toast('Saved locally; Airtable update failed');}
+}
+let syncT;
+function syncPackingToAirtable(){clearTimeout(syncT);syncT=setTimeout(async()=>{
+  const items=(state.packing||[]).map(p=>({text:p.text,category:p.category,qty:p.qty,reason:p.reason,packed:lineDone(p)}));
+  try{await api({action:'savePacking',tripName:state.trip.name,items});}catch(e){}
+},800);}
+
+$('#saveCfg').addEventListener('click',async()=>{
+  state.cfg.base=$('#cfgBase').value.trim();
+  if(!state.cfg.base){toast('Enter your Base ID');return;}
+  localStorage.setItem('packwise_cfg',JSON.stringify(state.cfg));
+  $('#modeSeg button[data-mode="airtable"]').click();
+});
+
+/* ---------- BACKUP: export / import ---------- */
+function exportData(){
+  const data={app:'packwise',v:1,exportedAt:new Date().toISOString(),
+    trip:state.trip,closet:state.closet,packing:state.packing,outfits:state.outfits,
+    cfg:{base:state.cfg&&state.cfg.base?state.cfg.base:''}};
+  const clean=JSON.parse(JSON.stringify(data));
+  if(clean.trip)delete clean.trip._weather;
+  const blob=new Blob([JSON.stringify(clean,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`packwise-backup-${iso(new Date())}.json`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+  $('#backupStatus').textContent='Backup downloaded — save it to iCloud Drive to open on another device.';
+  toast('Backup downloaded');
+}
+$('#exportBtn').addEventListener('click',exportData);
+$('#importBtn').addEventListener('click',()=>$('#importFile').click());
+$('#importFile').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(!d.trip||!Array.isArray(d.closet))throw new Error('shape');
+    state.trip=d.trip;state.closet=d.closet||[];state.packing=d.packing||[];state.outfits=d.outfits||[];state.selected=[];
+    if(!state.cfg)state.cfg={base:''};
+    if(d.cfg&&d.cfg.base)state.cfg.base=d.cfg.base;
+    if(!state.trip.laundry)state.trip.laundry={available:false,intervalDays:4};
+    mode='demo';$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='demo'));
+    save();renderAll();goTab('trip');
+    $('#backupStatus').textContent='Backup loaded.';toast('Backup loaded');
+  }catch(err){$('#backupStatus').textContent='That file does not look like a Packwise backup.';toast('Could not read that file');}
+  e.target.value='';
+});
+
+/* ---------- RESET ---------- */
+$('#resetBtn').addEventListener('click',()=>{localStorage.removeItem('packwise');state=seed();mode='demo';$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='demo'));renderAll();toast('Demo data reset');});
+
+/* ---------- boot ---------- */
+function renderAll(){
+  $('#tripName').value=state.trip.name||'';
+  $('#tripStart').value=state.trip.start||'';
+  $('#cfgBase').value=state.cfg?.base||'';
+  renderDestinations();renderTripStats();renderPacking();renderCloset();renderOutfits();updateSel();syncUnitSeg();
+}
+try{const c=JSON.parse(localStorage.getItem('packwise_cfg'));if(c)state.cfg=c;}catch(e){}
+$('#buildBtn').addEventListener('click',buildForecast);
+
+/* ---------- guided flow: a Next button connecting each page ---------- */
+const FLOW=[
+  {tab:'trip',name:'Trip'},
+  {tab:'weather',name:'Weather'},
+  {tab:'closet',name:'Closet'},
+  {tab:'capsule',name:'Capsule'},
+  {tab:'outfits',name:'Outfits'},
+  {tab:'pack',name:'Packing List'},
+];
+const FLOW_NEXT={
+  trip:{label:'Get the forecast →',act:()=>buildForecast()},
+  weather:{label:'Next: add your clothes →',act:()=>goTab('closet')},
+  closet:{label:'Next: pick your capsule →',act:()=>goTab('capsule')},
+  capsule:{label:'Build the matches →',act:()=>autoMakeOutfits()},
+  outfits:{label:'Next: your packing list →',act:()=>goTab('pack')},
+  pack:{label:null,act:null},
+};
+function injectFlowNav(){
+  FLOW.forEach((f,i)=>{
+    const panel=$('#p-'+f.tab);if(!panel||panel.querySelector('.flownav'))return;
+    const prev=FLOW[i-1];const d=FLOW_NEXT[f.tab];
+    const nav=document.createElement('div');nav.className='flownav';
+    nav.innerHTML=`
+      <div class="side">${prev?`<button class="btn ghost sm" data-back>← ${prev.name}</button>`:''}</div>
+      <div class="step">Step ${i+1} of ${FLOW.length}</div>
+      <div class="side right">${d.label?`<button class="btn terra" data-next>${d.label}</button>`:'<span class="step">🧳 Ready to pack</span>'}</div>`;
+    panel.appendChild(nav);
+    const back=nav.querySelector('[data-back]');if(back&&prev)back.addEventListener('click',()=>goTab(prev.tab));
+    const nx=nav.querySelector('[data-next]');if(nx)nx.addEventListener('click',()=>FLOW_NEXT[f.tab].act());
+  });
+}
+injectFlowNav();
+renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# index.html is served at the site root; the Airtable proxy lives at
+# /.netlify/functions/airtable and reads the AIRTABLE_PAT environment variable.
