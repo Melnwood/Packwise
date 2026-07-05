@@ -291,16 +291,10 @@
 <div class="wrap">
   <header class="app">
     <div class="brand">
-      <div class="logo">Pack<span class="dot">·</span>wise <span class="build">build Jun 7 · v22</span></div>
+      <div class="logo">Pack<span class="dot">·</span>wise <span class="build">build Jun 7 · v23</span></div>
       <div class="tagline">Multi-stop trips, real forecasts, and your own closet — packed.</div>
     </div>
-    <div class="modepill">
-      <span class="lbl">Data</span>
-      <div class="seg" id="modeSeg">
-        <button data-mode="demo" class="on">Demo</button>
-        <button data-mode="airtable">Live</button>
-      </div>
-    </div>
+    <div id="syncPill" style="font-size:12px;font-weight:600;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px;box-shadow:var(--shadow);white-space:nowrap"></div>
   </header>
 
   <nav class="tabs" id="tabs">
@@ -499,7 +493,7 @@
     <div class="card pad" style="margin-top:16px">
       <h3 style="margin-top:0;font-family:Fraunces,serif">Reset</h3>
       <p class="hint">Clears the demo data saved in this browser and reloads the sample trip.</p>
-      <button class="btn ghost sm" id="resetBtn" style="margin-top:8px">Reset demo data</button>
+      <button class="btn ghost sm" id="resetBtn" style="margin-top:8px">Start fresh (clear this space)</button>
     </div>
   </section>
 </div>
@@ -578,7 +572,7 @@ const ACTIVITIES=[
 
 /* ---------- state ---------- */
 let state=load()||seed();
-let mode='demo';
+let mode='airtable';  // the app always lives on Airtable (falls back to local cache if offline)
 
 function seed(){
   const start=iso(addDays(new Date(),14));
@@ -617,19 +611,17 @@ function serializeState(){
   if(s.trip)delete s.trip._weather;
   return s;
 }
+function setSync(txt){const el=$('#syncPill');if(el)el.textContent=txt;const c=$('#connStatus');if(c)c.textContent=txt;}
 async function saveStateToAirtable(){
   try{
     await api({action:'saveState',data:JSON.stringify(serializeState())});
-    const el=$('#connStatus');if(el)el.textContent='Saved to Airtable ✓ '+new Date().toLocaleTimeString();
-  }catch(e){const el=$('#connStatus');if(el)el.textContent='Could not save to Airtable — check your connection.';}
+    setSync('Saved ✓');
+  }catch(e){setSync('Saved on this device (not synced yet)');}
 }
 function save(){
-  if(mode==='airtable'){
-    try{localStorage.setItem('packwise_live',JSON.stringify(state));}catch(e){}
-    clearTimeout(stateSyncT);stateSyncT=setTimeout(saveStateToAirtable,900);
-    return;
-  }
-  try{localStorage.setItem('packwise',JSON.stringify(state));}catch(e){toast('Storage full — export a backup (Setup) or deploy to keep adding photos');}
+  try{localStorage.setItem('packwise',JSON.stringify(state));}catch(e){}
+  setSync('Saving…');
+  clearTimeout(stateSyncT);stateSyncT=setTimeout(saveStateToAirtable,900);
 }
 function load(){try{return JSON.parse(localStorage.getItem('packwise'));}catch(e){return null;}}
 
@@ -642,17 +634,6 @@ $('#tabs').addEventListener('click',e=>{
   if(b.dataset.tab==='pack'&&typeof renderPacking==='function')renderPacking();
 });
 function goTab(t){$$('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));$$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));if(t==='capsule'&&typeof renderCapsuleTab==='function')renderCapsuleTab();if(t==='pack'&&typeof renderPacking==='function')renderPacking();}
-
-/* ---------- mode toggle ---------- */
-$('#modeSeg').addEventListener('click',async e=>{
-  const b=e.target.closest('button');if(!b)return;
-  mode=b.dataset.mode;
-  $$('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));
-  if(mode==='airtable'){
-    if(!state.cfg.base){toast('Add your Base ID in Setup first');goTab('setup');}
-    else{if(!userKey)setUserKey(makeUserKey());localStorage.setItem('packwise_mode','airtable');renderSpaceCard();await pullAirtable();}
-  }else{localStorage.setItem('packwise_mode','demo');state=load()||seed();renderAll();}
-});
 
 /* ---------- TRIP rendering ---------- */
 function renderDestinations(){
@@ -1136,13 +1117,11 @@ function deleteClosetItem(id){
   state.outfits=(state.outfits||[]).filter(o=>(o.itemIds||[]).length);
   state.selected=(state.selected||[]).filter(x=>x!==id);
   renderCloset();renderPacking();renderOutfits();updateSel();save();
-  if(mode==='airtable'){api({action:'delete',table:'Closet',recordId:id}).catch(()=>{});}
   toast('Deleted');
 }
 function clearCloset(){
   if(!(state.closet||[]).length){toast('Closet is already empty');return;}
-  if(mode==='airtable'){toast('In Live mode, delete items in Airtable');return;}
-  if(!confirm('Remove ALL items from your closet? This clears the sample data so you can add your own. (Your trip and list stay.)'))return;
+  if(!confirm('Remove ALL items from your closet? (Your trip and list stay.)'))return;
   state.closet=[];
   (state.packing||[]).forEach(p=>{if(p.assigned)p.assigned=[];});
   state.outfits=[];state.selected=[];
@@ -1467,16 +1446,13 @@ async function pullAirtable(){
       if(!state.trip.laundry)state.trip.laundry={available:false,intervalDays:4};
       if(!state.cfg)state.cfg={base:''};
       state.cfg.base=base;state.selected=state.selected||[];
-      renderAll();
-      $('#connStatus').textContent='Connected — loaded your saved data from Airtable ✓';
-      toast('Loaded from Airtable');
+      renderAll();setSync('Synced ✓');
     }else{
-      // first time on this base: push whatever is here now
-      await saveStateToAirtable();renderAll();
-      $('#connStatus').textContent='Connected — now auto-saving to Airtable ✓';
-      toast('Connected — auto-saving on');
+      await saveStateToAirtable();renderAll();setSync('Synced ✓');
     }
-  }catch(e){$('#connStatus').textContent='Could not reach Airtable. Check the AIRTABLE_PAT env var and Base ID on Netlify, or stay in Demo.';toast('Live connection failed');mode='demo';$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='demo'));localStorage.setItem('packwise_mode','demo');}
+  }catch(e){
+    renderAll();setSync('On this device (not synced)');
+  }
 }
 /* per-entity writes are no longer needed — the whole state is saved as one record */
 async function createClosetAirtable(){}
@@ -1489,29 +1465,26 @@ $('#saveCfg').addEventListener('click',async()=>{
   localStorage.setItem('packwise_cfg',JSON.stringify(state.cfg));
   if(!userKey)setUserKey(makeUserKey());
   renderSpaceCard();
-  $('#modeSeg button[data-mode="airtable"]').click();
+  await pullAirtable();
+  toast('Connected');
 });
 function renderSpaceCard(){
-  const inp=$('#spaceCode');if(inp)inp.value=userKey||'(created when you go Live)';
+  const inp=$('#spaceCode');if(inp)inp.value=userKey||'(set up on first use)';
 }
 $('#copySpace').addEventListener('click',()=>{
-  if(!userKey){toast('Turn on Live first to create your code');return;}
+  if(!userKey){toast('Your code is created on first use');return;}
   navigator.clipboard&&navigator.clipboard.writeText(userKey);toast('Code copied — save it somewhere safe');
 });
 $('#spaceUse').addEventListener('click',async()=>{
   const k=$('#spaceEnter').value.trim();
   if(!/^[A-Za-z0-9_-]{6,64}$/.test(k)){toast('That code doesn’t look right');return;}
   setUserKey(k);$('#spaceEnter').value='';renderSpaceCard();
-  localStorage.setItem('packwise_mode','airtable');
-  mode='airtable';$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='airtable'));
   await pullAirtable();toast('Opened that space');
 });
 $('#spaceNew').addEventListener('click',()=>{
   if(!confirm('Start a brand-new empty space? Your current code will be replaced (save it first if you want to keep it).'))return;
   setUserKey(makeUserKey());renderSpaceCard();
-  state=seed();state.cfg.base=$('#cfgBase').value.trim()||state.cfg.base;
-  localStorage.setItem('packwise_mode','airtable');mode='airtable';
-  $$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='airtable'));
+  state=seed();
   save();renderAll();renderSpaceCard();toast('New space created');
 });
 
@@ -1541,7 +1514,6 @@ $('#importFile').addEventListener('change',async e=>{
     if(!state.cfg)state.cfg={base:''};
     if(d.cfg&&d.cfg.base)state.cfg.base=d.cfg.base;
     if(!state.trip.laundry)state.trip.laundry={available:false,intervalDays:4};
-    mode='demo';$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='demo'));
     save();renderAll();goTab('trip');
     $('#backupStatus').textContent='Backup loaded.';toast('Backup loaded');
   }catch(err){$('#backupStatus').textContent='That file does not look like a Packwise backup.';toast('Could not read that file');}
@@ -1549,7 +1521,7 @@ $('#importFile').addEventListener('change',async e=>{
 });
 
 /* ---------- RESET ---------- */
-$('#resetBtn').addEventListener('click',()=>{localStorage.removeItem('packwise');state=seed();mode='demo';$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='demo'));renderAll();toast('Demo data reset');});
+$('#resetBtn').addEventListener('click',()=>{if(!confirm('Clear everything in this space and start fresh?'))return;state=seed();save();renderAll();toast('Started fresh');});
 
 /* ---------- boot ---------- */
 function renderAll(){
@@ -1597,7 +1569,7 @@ injectFlowNav();
 renderAll();
 
 /* ---------- first-run welcome (as simple as possible) ---------- */
-function connectLiveUI(){if(state.cfg.base){mode='airtable';$$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='airtable'));localStorage.setItem('packwise_mode','airtable');}}
+function connectLiveUI(){mode='airtable';}
 function welcomeStep1(){
   $('#welcomeBody').innerHTML=`
     <div style="font-family:Fraunces,serif;font-size:24px;font-weight:600;margin-bottom:6px">Welcome to Packwise</div>
@@ -1635,14 +1607,14 @@ async function finishWelcome(){
   if(mode==='airtable'&&state.cfg.base){try{await pullAirtable();}catch(e){}}
   goTab('trip');
 }
-// Auto-reconnect to Airtable if this device was using Live mode
-if(localStorage.getItem('packwise_mode')==='airtable'&&state.cfg&&state.cfg.base&&userKey){
+// Always live on Airtable: connect if we have a space code, otherwise onboard.
+if(userKey&&state.cfg&&state.cfg.base){
   mode='airtable';
-  $$('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='airtable'));
+  setSync('Connecting…');
   pullAirtable();
+}else if(!userKey){
+  $('#welcome').classList.add('on');welcomeStep1();
 }
-// Show welcome only for brand-new visitors
-if(!localStorage.getItem('packwise_onboarded')&&!userKey){$('#welcome').classList.add('on');welcomeStep1();}
 </script>
 </body>
 </html>
