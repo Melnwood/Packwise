@@ -291,7 +291,7 @@
 <div class="wrap">
   <header class="app">
     <div class="brand">
-      <div class="logo">Pack<span class="dot">·</span>wise <span class="build">build Jun 7 · v24</span></div>
+      <div class="logo">Pack<span class="dot">·</span>wise <span class="build">build Jun 7 · v26</span></div>
       <div class="tagline">Multi-stop trips, real forecasts, and your own closet — packed.</div>
     </div>
   </header>
@@ -401,7 +401,14 @@
         <button class="btn ghost sm" id="clearSel">Clear</button>
       </div>
       <button class="btn terra" id="autoOutfits" style="margin-top:12px;width:100%">✨ Auto-make outfits from selected pieces</button>
-      <p class="hint" style="margin:10px 0 0"><b>Auto-make</b> builds complete outfits — each one is a <b>shirt + bottom + shoes</b> (a dress can stand in for shirt+bottom). Select some of each, and it mixes every combination. You keep the ones you like and set days on the Outfits tab.</p>
+      <div class="row" style="align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <span class="hint" style="flex:0 0 auto">Set selected to:</span>
+        <select id="bulkCat" style="flex:1;min-width:120px">
+          <option>Top</option><option>Bottom</option><option>Dress</option><option>Outerwear</option><option>Footwear</option><option>Swim</option><option>Accessory</option><option>Activewear</option>
+        </select>
+        <button class="btn ghost sm" id="bulkApply">Apply category</button>
+      </div>
+      <p class="hint" style="margin:10px 0 0"><b>Auto-make</b> builds complete outfits — each one is a <b>shirt + bottom + shoes</b> (a dress can stand in for shirt+bottom). Or use <b>Set selected to</b> to re-category a bunch at once (e.g. tap all your shoes → Footwear → Apply).</p>
     </div>
   </section>
 
@@ -1336,6 +1343,13 @@ function autoMakeOutfits(){
   toast(`Made ${made.length} outfit${made.length>1?'s':''} — keep the ones you like`);
 }
 $('#autoOutfits').addEventListener('click',autoMakeOutfits);
+$('#bulkApply').addEventListener('click',()=>{
+  if(!state.selected.length){toast('Tap the items first, then Apply');return;}
+  const cat=$('#bulkCat').value;let n=0;
+  state.selected.forEach(id=>{const it=(state.closet||[]).find(c=>c.id===id);if(it){it.Category=cat;n++;}});
+  save();renderCloset();updateSel();if(typeof renderCapsuleTab==='function')renderCapsuleTab();
+  toast(`Set ${n} item${n===1?'':'s'} to ${cat}`);
+});
 
 /* ---------- CAPSULE TAB ---------- */
 let capTarget=parseInt(localStorage.getItem('packwise_captarget'),10);
@@ -1379,7 +1393,7 @@ function renderCapsuleTab(){
         <button class="btn sea sm" data-add="${cat}">+ Add ${label.toLowerCase()}</button>
       </div>
       <div class="ptags" style="padding-left:0;margin-top:10px">${thumbs||`<span class="hint">No ${label.toLowerCase()} yet — tap “Add ${label.toLowerCase()}” to take or upload photos.</span>`}</div>`;
-    card.querySelector('[data-add]').addEventListener('click',()=>{capAddCategory=cat;$('#capCatInput').click();});
+    card.querySelector('[data-add]').addEventListener('click',()=>openCapPicker(cat));
     card.querySelectorAll('[data-rm]').forEach(t=>t.addEventListener('click',()=>{state.selected=state.selected.filter(x=>x!==t.dataset.rm);renderCapsuleTab();renderCloset();updateSel();save();}));
     slots.appendChild(card);
   });
@@ -1389,6 +1403,28 @@ function renderCapsuleTab(){
   const btn=$('#capMake');btn.disabled=!ready;btn.style.opacity=ready?'1':'.5';
 }
 let capAddCategory='Top';
+function openCapPicker(cat){
+  const label={Top:'tops',Bottom:'bottoms',Outerwear:'outerwear',Footwear:'shoes',Dress:'dresses',Accessory:'accessories'}[cat]||cat.toLowerCase();
+  $('#pickTitle').textContent='Add '+label;
+  const grid=$('#pickGrid');grid.innerHTML='';
+  const up=document.createElement('div');up.className='item';up.style.cursor='pointer';up.style.borderStyle='dashed';
+  up.innerHTML=`<div class="img" style="font-size:32px;background:var(--paper-2)">＋</div><div class="cap"><div class="nm">Upload photo</div><div class="tg">new ${label}</div></div>`;
+  up.addEventListener('click',()=>{capAddCategory=cat;$('#pickScrim').classList.remove('on');$('#capCatInput').click();});
+  grid.appendChild(up);
+  const avail=(state.closet||[]).filter(it=>it.Category===cat&&!state.selected.includes(it.id));
+  if(!avail.length){
+    const note=document.createElement('div');note.className='hint';note.style.gridColumn='1/-1';note.style.padding='6px 2px';
+    note.textContent=`No ${label} in your closet yet — tap “Upload photo” to add one.`;grid.appendChild(note);
+  }
+  avail.forEach(it=>{
+    const el=document.createElement('div');el.className='item';
+    const ph=it.photo?`<img src="${it.photo}">`:(it.emoji||'👕');
+    el.innerHTML=`<div class="img">${ph}</div><div class="cap"><div class="nm">${it.name}</div><div class="tg">${it.Category}${it.Color?' · '+it.Color:''}</div></div>`;
+    el.addEventListener('click',()=>{state.selected.push(it.id);save();renderCapsuleTab();renderCloset();updateSel();openCapPicker(cat);});
+    grid.appendChild(el);
+  });
+  $('#pickScrim').classList.add('on');
+}
 $('#capCatInput').addEventListener('change',e=>{handlePhotoFiles(e.target.files,capAddCategory);e.target.value='';});
 $('#capCountChips').addEventListener('click',e=>{const b=e.target.closest('[data-n]');if(!b)return;setCapTarget(+b.dataset.n);renderCapsuleTab();});
 $('#capCustom').addEventListener('input',e=>{const v=parseInt(e.target.value,10);if(!isNaN(v)){setCapTarget(v);renderCapsuleTab();}});
