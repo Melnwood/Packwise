@@ -291,10 +291,9 @@
 <div class="wrap">
   <header class="app">
     <div class="brand">
-      <div class="logo">Pack<span class="dot">·</span>wise <span class="build">build Jun 7 · v23</span></div>
+      <div class="logo">Pack<span class="dot">·</span>wise <span class="build">build Jun 7 · v24</span></div>
       <div class="tagline">Multi-stop trips, real forecasts, and your own closet — packed.</div>
     </div>
-    <div id="syncPill" style="font-size:12px;font-weight:600;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px;box-shadow:var(--shadow);white-space:nowrap"></div>
   </header>
 
   <nav class="tabs" id="tabs">
@@ -455,22 +454,13 @@
       <p class="hint" id="backupStatus" style="margin-top:10px"></p>
     </div>
 
-    <div class="card pad" id="spaceCard">
-      <h3 style="margin-top:0;font-family:Fraunces,serif">Your private space</h3>
-      <p class="hint">Everyone who uses Packwise gets their own space, so people only see their own clothes. This is your private access code — <b>save it</b> to open your closet on another device. Keep it private: anyone with this code can see your things.</p>
+    <div class="card pad" id="accountCard">
+      <h3 style="margin-top:0;font-family:Fraunces,serif">Your account</h3>
+      <p class="hint">You're signed in with your name and password. Use the same two on any device to open your closet — nothing to save or copy. To share Packwise, just send someone the site link; they sign in with their own name and password, and their closet stays separate from yours.</p>
       <div class="row" style="margin-top:12px;align-items:center">
-        <div style="flex:2;min-width:200px"><label class="f">Your space code</label><input type="text" id="spaceCode" readonly></div>
-        <button class="btn sm" id="copySpace">Copy</button>
+        <div style="flex:2;min-width:200px"><label class="f">Signed in as</label><input type="text" id="acctName" readonly></div>
+        <button class="btn ghost sm" id="signOut">Sign out</button>
       </div>
-      <details class="setup" style="margin-top:14px">
-        <summary>Use a different code (open your space on another device, or start fresh)</summary>
-        <div class="row" style="margin-top:10px;align-items:center">
-          <input type="text" id="spaceEnter" placeholder="paste an existing code" style="flex:2;min-width:180px">
-          <button class="btn sea sm" id="spaceUse">Use this code</button>
-          <button class="btn ghost sm" id="spaceNew">New space</button>
-        </div>
-        <p class="hint" style="margin:8px 0 0">To share Packwise with someone, just send them your site link — they open it, get their <i>own</i> code, and their closet stays separate from yours.</p>
-      </details>
     </div>
 
     <div class="card pad">
@@ -486,7 +476,7 @@
         <summary>One-time setup (~3 minutes, on your Mac)</summary>
         <p class="hint" style="margin:10px 0">1. Create an Airtable <b>personal access token</b> at <code>airtable.com/create/tokens</code> with scopes <code>data.records:read</code> + <code>data.records:write</code>, given access to the <b>Packwise</b> base.<br>
         2. In Netlify → your site → <b>Site settings → Environment variables</b>, add <code>AIRTABLE_PAT</code> = your token, then redeploy.<br>
-        3. Back here the Base ID is already filled — tap <b>Save &amp; connect</b>, then flip the top toggle to <b>Live</b>. From then on it auto-connects and auto-saves.</p>
+        3. Back here the Base ID is already filled — tap <b>Save &amp; connect</b>. From then on the app auto-connects and auto-saves for everyone who signs in.</p>
       </details>
     </div>
 
@@ -611,7 +601,7 @@ function serializeState(){
   if(s.trip)delete s.trip._weather;
   return s;
 }
-function setSync(txt){const el=$('#syncPill');if(el)el.textContent=txt;const c=$('#connStatus');if(c)c.textContent=txt;}
+function setSync(txt){const c=$('#connStatus');if(c)c.textContent=txt;}
 async function saveStateToAirtable(){
   try{
     await api({action:'saveState',data:JSON.stringify(serializeState())});
@@ -1463,29 +1453,18 @@ $('#saveCfg').addEventListener('click',async()=>{
   state.cfg.base=$('#cfgBase').value.trim();
   if(!state.cfg.base){toast('Enter your Base ID');return;}
   localStorage.setItem('packwise_cfg',JSON.stringify(state.cfg));
-  if(!userKey)setUserKey(makeUserKey());
-  renderSpaceCard();
+  if(!userKey){toast('Sign in first');$('#welcome').classList.add('on');welcomeStep1();return;}
   await pullAirtable();
   toast('Connected');
 });
 function renderSpaceCard(){
-  const inp=$('#spaceCode');if(inp)inp.value=userKey||'(set up on first use)';
+  const inp=$('#acctName');if(inp)inp.value=localStorage.getItem('packwise_name')||'(sign in on first use)';
 }
-$('#copySpace').addEventListener('click',()=>{
-  if(!userKey){toast('Your code is created on first use');return;}
-  navigator.clipboard&&navigator.clipboard.writeText(userKey);toast('Code copied — save it somewhere safe');
-});
-$('#spaceUse').addEventListener('click',async()=>{
-  const k=$('#spaceEnter').value.trim();
-  if(!/^[A-Za-z0-9_-]{6,64}$/.test(k)){toast('That code doesn’t look right');return;}
-  setUserKey(k);$('#spaceEnter').value='';renderSpaceCard();
-  await pullAirtable();toast('Opened that space');
-});
-$('#spaceNew').addEventListener('click',()=>{
-  if(!confirm('Start a brand-new empty space? Your current code will be replaced (save it first if you want to keep it).'))return;
-  setUserKey(makeUserKey());renderSpaceCard();
-  state=seed();
-  save();renderAll();renderSpaceCard();toast('New space created');
+$('#signOut').addEventListener('click',()=>{
+  if(!confirm('Sign out? You\'ll need the same name and password to get back into your closet.'))return;
+  localStorage.removeItem('packwise_user');localStorage.removeItem('packwise_name');localStorage.removeItem('packwise_onboarded');
+  userKey='';
+  $('#welcome').classList.add('on');welcomeStep1();
 });
 
 /* ---------- BACKUP: export / import ---------- */
@@ -1568,44 +1547,47 @@ function injectFlowNav(){
 injectFlowNav();
 renderAll();
 
-/* ---------- first-run welcome (as simple as possible) ---------- */
+/* ---------- sign in with name + password (derives a private key) ---------- */
 function connectLiveUI(){mode='airtable';}
+async function deriveKey(name,password){
+  const raw=(name||'').trim().toLowerCase()+'::'+(password||'');
+  try{
+    const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw));
+    const hex=[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+    return 'u'+hex.slice(0,40);
+  }catch(e){
+    let h=5381;for(let i=0;i<raw.length;i++){h=((h<<5)+h+raw.charCodeAt(i))>>>0;}
+    let h2=52711;for(let i=0;i<raw.length;i++){h2=((h2<<5)+h2+raw.charCodeAt(i))>>>0;}
+    return 'u'+h.toString(36)+h2.toString(36)+raw.length;
+  }
+}
 function welcomeStep1(){
   $('#welcomeBody').innerHTML=`
     <div style="font-family:Fraunces,serif;font-size:24px;font-weight:600;margin-bottom:6px">Welcome to Packwise</div>
-    <p class="hint" style="margin:0 0 16px">Your own private closet and packing helper. What should we call you?</p>
-    <input type="text" id="wName" placeholder="Your first name" style="margin-bottom:12px">
-    <button class="btn terra" id="wContinue" style="width:100%">Continue →</button>
-    <button class="btn ghost sm" id="wHaveCode" style="width:100%;margin-top:10px">I already have a code</button>`;
-  $('#wContinue').addEventListener('click',()=>{setUserKey(makeUserKey($('#wName').value.trim()));connectLiveUI();welcomeStep2($('#wName').value.trim());});
-  $('#wHaveCode').addEventListener('click',welcomeCode);
+    <p class="hint" style="margin:0 0 16px">Your own private closet and packing helper. Sign in with a name and a password — the same two get you back in on any device.</p>
+    <input type="text" id="wName" placeholder="Your name" style="margin-bottom:10px">
+    <input type="password" id="wPass" placeholder="Password" style="margin-bottom:12px">
+    <button class="btn terra" id="wGo" style="width:100%">Sign in →</button>
+    <p class="hint" style="margin:12px 0 0;font-size:11.5px">New here? Just pick a name and password — this creates your space. Returning? Enter the same ones. There's no password reset, so pick something you'll remember.</p>`;
+  $('#wGo').addEventListener('click',doSignIn);
+  $('#wPass').addEventListener('keydown',e=>{if(e.key==='Enter')doSignIn();});
   setTimeout(()=>$('#wName')&&$('#wName').focus(),50);
 }
-function welcomeStep2(name){
-  $('#welcomeBody').innerHTML=`
-    <div style="font-family:Fraunces,serif;font-size:24px;font-weight:600;margin-bottom:6px">You're all set${name?', '+name:''}!</div>
-    <p class="hint" style="margin:0 0 14px"><b>Save this code.</b> It's how you open your closet on your phone, iPad, or laptop — and it keeps your things private to you.</p>
-    <div class="row" style="align-items:center"><input type="text" id="wCode" readonly value="${userKey}" style="flex:2"><button class="btn sm" id="wCopy">Copy</button></div>
-    <button class="btn terra" id="wStart" style="width:100%;margin-top:16px">Start packing →</button>`;
-  $('#wCopy').addEventListener('click',()=>{try{navigator.clipboard.writeText(userKey);}catch(e){}toast('Code copied — keep it safe');});
-  $('#wStart').addEventListener('click',finishWelcome);
-}
-function welcomeCode(){
-  $('#welcomeBody').innerHTML=`
-    <div style="font-family:Fraunces,serif;font-size:24px;font-weight:600;margin-bottom:6px">Enter your code</div>
-    <p class="hint" style="margin:0 0 14px">Paste the code from your other device to open your closet here.</p>
-    <input type="text" id="wEnter" placeholder="your code" style="margin-bottom:12px">
-    <button class="btn terra" id="wEnterGo" style="width:100%">Open my closet →</button>
-    <button class="btn ghost sm" id="wBack" style="width:100%;margin-top:10px">← Back</button>`;
-  $('#wEnterGo').addEventListener('click',()=>{const k=$('#wEnter').value.trim();if(!/^[A-Za-z0-9_-]{6,64}$/.test(k)){toast('That code doesn’t look right');return;}setUserKey(k);connectLiveUI();finishWelcome();});
-  $('#wBack').addEventListener('click',welcomeStep1);
-}
-async function finishWelcome(){
+async function doSignIn(){
+  const name=$('#wName').value.trim();
+  const pass=$('#wPass').value;
+  if(name.length<2){toast('Enter your name');return;}
+  if(pass.length<4){toast('Pick a password (at least 4 characters)');return;}
+  const key=await deriveKey(name,pass);
+  setUserKey(key);
+  localStorage.setItem('packwise_name',name);
+  connectLiveUI();
   localStorage.setItem('packwise_onboarded','1');
   $('#welcome').classList.remove('on');
   renderSpaceCard();
-  if(mode==='airtable'&&state.cfg.base){try{await pullAirtable();}catch(e){}}
+  if(state.cfg&&state.cfg.base){try{await pullAirtable();}catch(e){}}
   goTab('trip');
+  toast('Signed in, '+name);
 }
 // Always live on Airtable: connect if we have a space code, otherwise onboard.
 if(userKey&&state.cfg&&state.cfg.base){
